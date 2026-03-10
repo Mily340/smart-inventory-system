@@ -1,0 +1,56 @@
+import bcrypt from "bcryptjs";
+import prisma from "../db/prisma.js";
+import ApiError from "../utils/ApiError.js";
+import { signToken } from "../utils/jwt.js";
+
+export const loginUser = async ({ email, password }) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new ApiError(401, "Invalid email or password");
+
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) throw new ApiError(401, "Invalid email or password");
+
+  const token = signToken({ userId: user.id, role: user.role });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      branchId: user.branchId,
+    },
+  };
+};
+
+export const registerUser = async ({ fullName, email, password, role, branchId }) => {
+  const exists = await prisma.user.findUnique({ where: { email } });
+  if (exists) throw new ApiError(409, "Email already exists");
+
+  if (role !== "SUPER_ADMIN" && !branchId) {
+    throw new ApiError(400, "branchId is required for non-admin users");
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      fullName,
+      email,
+      password: hash,
+      role,
+      branchId: role === "SUPER_ADMIN" ? null : branchId,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      branchId: true,
+      createdAt: true,
+    },
+  });
+
+  return user;
+};
