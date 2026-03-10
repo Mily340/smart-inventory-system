@@ -58,6 +58,7 @@ enum DeliveryStatus {
 
 model User {
   id                  String             @id @default(uuid())
+  code                String?            @unique // U001, U002...
   fullName            String             @map("full_name")
   email               String             @unique
   password            String
@@ -78,6 +79,7 @@ model User {
 
 model Branch {
   id                  String            @id @default(uuid())
+  code                String?           @unique // B001, B002...
   name                String
   address             String
   latitude            Float
@@ -97,6 +99,7 @@ model Branch {
 
 model Category {
   id                  String            @id @default(uuid())
+  code                String?           @unique // C001, C002...
   name                String            @unique
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
@@ -108,6 +111,7 @@ model Category {
 
 model Product {
   id                  String             @id @default(uuid())
+  code                String?            @unique // P001, P002...
   sku                 String             @unique
   name                String
   description         String?
@@ -197,6 +201,7 @@ model TransferItem {
 
 model Distributor {
   id                  String          @id @default(uuid())
+  code                String?         @unique // D001, D002...
   name                String
   email               String          @unique
   phone               String?
@@ -211,6 +216,7 @@ model Distributor {
 
 model Order {
   id                  String          @id @default(uuid())
+  code                String?         @unique // O001, O002...
   distributorId       String          @map("distributor_id")
   branchId            String          @map("branch_id")
   createdBy           String          @map("created_by")
@@ -246,6 +252,7 @@ model OrderItem {
 
 model Delivery {
   id                  String           @id @default(uuid())
+  code                String?          @unique // DL001...
   orderId             String           @unique @map("order_id")
   riderId             String           @map("rider_id")
   status              DeliveryStatus   @default(ASSIGNED)
@@ -274,6 +281,7 @@ model DeliveryLocation {
 
 model Payment {
   id                  String         @id @default(uuid())
+  code                String?        @unique // PAY001...
   orderId             String         @map("order_id")
   stripeSessionId     String?        @map("stripe_session_id")
   stripePaymentIntent String?        @map("stripe_payment_intent")
