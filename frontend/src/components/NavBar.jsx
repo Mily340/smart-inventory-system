@@ -32,6 +32,9 @@ export default function NavBar() {
           <Link className={isActive("/inventory")} to="/inventory">
             Inventory
           </Link>
+          <Link className={isActive("/notifications")} to="/notifications">
+            Notifications
+          </Link>
         </div>
 
         <button className="btn btn-outline-secondary btn-sm" onClick={logout}>

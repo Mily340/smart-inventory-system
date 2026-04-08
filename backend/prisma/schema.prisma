@@ -73,6 +73,7 @@ model User {
   approvedTransfers   TransferRequest[]  @relation("ApprovedTransfers")
   createdOrders       Order[]
   assignedDeliveries  Delivery[]
+  notifications       Notification[]
 
   @@map("users")
 }
@@ -93,6 +94,7 @@ model Branch {
   outgoingTransfers   TransferRequest[] @relation("FromBranch")
   incomingTransfers   TransferRequest[] @relation("ToBranch")
   orders              Order[]
+  notifications       Notification[]
 
   @@map("branches")
 }
@@ -294,4 +296,33 @@ model Payment {
   order               Order          @relation(fields: [orderId], references: [id])
 
   @@map("payments")
+}
+enum NotificationType {
+  LOW_STOCK
+  TRANSFER_STATUS
+  ORDER_STATUS
+  GENERAL
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+
+  // target (optional filters)
+  userId    String?          @map("user_id")
+  branchId  String?          @map("branch_id")
+  role      Role?
+
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user      User?            @relation(fields: [userId], references: [id])
+  branch    Branch?          @relation(fields: [branchId], references: [id])
+
+  @@index([userId])
+  @@index([branchId])
+  @@index([isRead])
+  @@map("notifications")
 }

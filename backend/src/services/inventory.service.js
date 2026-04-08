@@ -12,6 +12,27 @@ const ensurePositiveInt = (value, fieldName) => {
   return n;
 };
 
+// Create a LOW_STOCK notification when qty <= reorderLevel
+const createLowStockNotificationIfNeeded = async (tx, branchId, productId) => {
+  const inv = await tx.inventory.findUnique({
+    where: { branchId_productId: { branchId, productId } },
+    include: { branch: true, product: true },
+  });
+
+  if (!inv) return;
+
+  if (inv.quantity <= inv.reorderLevel) {
+    await tx.notification.create({
+      data: {
+        type: "LOW_STOCK",
+        title: "Low stock alert",
+        message: `Low stock: ${inv.product.name} at ${inv.branch.name}. Qty=${inv.quantity}, ReorderLevel=${inv.reorderLevel}`,
+        branchId,
+      },
+    });
+  }
+};
+
 export const listInventory = async ({ branchId }) => {
   const where = branchId ? { branchId } : {};
 
@@ -54,6 +75,8 @@ export const stockIn = async ({ branchId, productId, quantity, reason }, userId)
       },
     });
 
+    await createLowStockNotificationIfNeeded(tx, branchId, productId);
+
     return inv;
   });
 };
@@ -93,6 +116,8 @@ export const stockOut = async ({ branchId, productId, quantity, reason }, userId
       },
     });
 
+    await createLowStockNotificationIfNeeded(tx, branchId, productId);
+
     return updated;
   });
 };
@@ -121,13 +146,15 @@ export const adjustStock = async ({ branchId, productId, newQuantity, reason }, 
         branchId,
         productId,
         type: "ADJUSTMENT",
-        quantity: q, // storing the adjusted value (simple approach)
+        quantity: q,
         reason: reason || "Adjustment",
         referenceType: "MANUAL",
         referenceId: null,
         createdBy: userId,
       },
     });
+
+    await createLowStockNotificationIfNeeded(tx, branchId, productId);
 
     return inv;
   });
@@ -139,14 +166,20 @@ export const updateReorderLevel = async ({ branchId, productId, reorderLevel }) 
     throw new ApiError(400, "reorderLevel must be an integer >= 0");
   }
 
-  const inv = await prisma.inventory.findUnique({
-    where: { branchId_productId: { branchId, productId } },
-  });
+  return prisma.$transaction(async (tx) => {
+    const inv = await tx.inventory.findUnique({
+      where: { branchId_productId: { branchId, productId } },
+    });
 
-  if (!inv) throw new ApiError(404, "Inventory record not found for this branch/product");
+    if (!inv) throw new ApiError(404, "Inventory record not found for this branch/product");
 
-  return prisma.inventory.update({
-    where: { id: inv.id },
-    data: { reorderLevel: lvl },
+    const updated = await tx.inventory.update({
+      where: { id: inv.id },
+      data: { reorderLevel: lvl },
+    });
+
+    await createLowStockNotificationIfNeeded(tx, branchId, productId);
+
+    return updated;
   });
 };

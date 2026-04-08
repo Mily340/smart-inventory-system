@@ -4,6 +4,7 @@ import branchRoutes from "./branch.routes.js";
 import categoryRoutes from "./category.routes.js";
 import productRoutes from "./product.routes.js";
 import inventoryRoutes from "./inventory.routes.js";
+import notificationRoutes from "./notification.routes.js";
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/branches", branchRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/inventory", inventoryRoutes);
+router.use("/notifications", notificationRoutes);
 
 export default router;
