@@ -10,17 +10,18 @@ export default function Inventory() {
   const [inventory, setInventory] = useState([]);
 
   const [branchId, setBranchId] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // forms
   const [productId, setProductId] = useState("");
+
   const [qty, setQty] = useState("");
   const [reorderLevel, setReorderLevel] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const fetchAll = async (selectedBranchId) => {
     setError("");
     setLoading(true);
+
     try {
       const [bRes, pRes] = await Promise.all([
         client.get("/branches"),
@@ -29,11 +30,14 @@ export default function Inventory() {
 
       const b = bRes.data?.data || [];
       const p = pRes.data?.data || [];
+
       setBranches(b);
       setProducts(p);
 
       const bId = selectedBranchId || b[0]?.id || "";
       setBranchId(bId);
+
+      if (!productId && p.length > 0) setProductId(p[0].id);
 
       if (bId) {
         const invRes = await client.get(`/inventory?branchId=${bId}`);
@@ -41,11 +45,10 @@ export default function Inventory() {
       } else {
         setInventory([]);
       }
-
-      if (!productId && p.length > 0) setProductId(p[0].id);
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load inventory";
       setError(msg);
+
       if (msg.toLowerCase().includes("unauthorized")) {
         localStorage.removeItem("token");
         navigate("/login");
@@ -57,9 +60,10 @@ export default function Inventory() {
 
   useEffect(() => {
     fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const changeBranch = async (e) => {
+  const changeBranch = (e) => {
     const id = e.target.value;
     setBranchId(id);
     fetchAll(id);
@@ -68,6 +72,7 @@ export default function Inventory() {
   const stockIn = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
       await client.post("/inventory/stock-in", {
         branchId,
@@ -85,6 +90,7 @@ export default function Inventory() {
   const stockOut = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
       await client.post("/inventory/stock-out", {
         branchId,
@@ -102,6 +108,7 @@ export default function Inventory() {
   const updateReorder = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
       await client.patch("/inventory/reorder-level", {
         branchId,
@@ -127,10 +134,15 @@ export default function Inventory() {
         <div className="row g-3 mb-3">
           <div className="col-md-4">
             <label className="form-label">Branch</label>
-            <select className="form-select" value={branchId} onChange={changeBranch}>
+            <select
+              className="form-select"
+              value={branchId}
+              onChange={changeBranch}
+            >
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.code ? `${b.code} - ` : ""}{b.name}
+                  {b.code ? `${b.code} - ` : ""}
+                  {b.name}
                 </option>
               ))}
             </select>
@@ -138,10 +150,15 @@ export default function Inventory() {
 
           <div className="col-md-4">
             <label className="form-label">Product</label>
-            <select className="form-select" value={productId} onChange={(e) => setProductId(e.target.value)}>
+            <select
+              className="form-select"
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+            >
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code ? `${p.code} - ` : ""}{p.name}
+                  {p.code ? `${p.code} - ` : ""}
+                  {p.name}
                 </option>
               ))}
             </select>
@@ -152,7 +169,7 @@ export default function Inventory() {
           <div className="card-body">
             <h6 className="card-title">Stock Actions</h6>
 
-            <form className="row g-2 mb-3" onSubmit={stockIn}>
+            <div className="row g-2 mb-3">
               <div className="col-md-3">
                 <input
                   className="form-control"
@@ -162,15 +179,23 @@ export default function Inventory() {
                   required
                 />
               </div>
+
               <div className="col-md-3">
-                <button className="btn btn-success w-100">Stock In</button>
+                <form onSubmit={stockIn}>
+                  <button className="btn btn-success w-100" type="submit">
+                    Stock In
+                  </button>
+                </form>
               </div>
+
               <div className="col-md-3">
-                <button className="btn btn-danger w-100" onClick={stockOut} type="button">
-                  Stock Out
-                </button>
+                <form onSubmit={stockOut}>
+                  <button className="btn btn-danger w-100" type="submit">
+                    Stock Out
+                  </button>
+                </form>
               </div>
-            </form>
+            </div>
 
             <form className="row g-2" onSubmit={updateReorder}>
               <div className="col-md-3">
@@ -182,8 +207,11 @@ export default function Inventory() {
                   required
                 />
               </div>
+
               <div className="col-md-3">
-                <button className="btn btn-primary w-100">Update Reorder</button>
+                <button className="btn btn-primary w-100" type="submit">
+                  Update Reorder
+                </button>
               </div>
             </form>
           </div>
@@ -212,7 +240,13 @@ export default function Inventory() {
                       <td>{row.product?.category?.name || "-"}</td>
                       <td>{row.quantity}</td>
                       <td>{row.reorderLevel}</td>
-                      <td>{low ? <span className="badge bg-danger">LOW</span> : <span className="badge bg-success">OK</span>}</td>
+                      <td>
+                        {low ? (
+                          <span className="badge bg-danger">LOW</span>
+                        ) : (
+                          <span className="badge bg-success">OK</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
