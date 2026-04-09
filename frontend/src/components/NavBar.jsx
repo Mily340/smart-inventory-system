@@ -35,6 +35,9 @@ export default function NavBar() {
           <Link className={isActive("/transfers")} to="/transfers">
             Transfers
           </Link>
+          <Link className={isActive("/distributors")} to="/distributors">
+            Distributors
+          </Link>
           <Link className={isActive("/notifications")} to="/notifications">
             Notifications
           </Link>

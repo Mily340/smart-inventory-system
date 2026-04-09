@@ -6,6 +6,8 @@ import productRoutes from "./product.routes.js";
 import inventoryRoutes from "./inventory.routes.js";
 import notificationRoutes from "./notification.routes.js";
 import transferRoutes from "./transfer.routes.js";
+import orderRoutes from "./order.routes.js";
+import distributorRoutes from "./distributor.routes.js";
 
 const router = Router();
 
@@ -16,5 +18,7 @@ router.use("/products", productRoutes);
 router.use("/inventory", inventoryRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/transfers", transferRoutes);
+router.use("/orders", orderRoutes);
+router.use("/distributors", distributorRoutes);
 
 export default router;
