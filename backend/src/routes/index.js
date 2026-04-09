@@ -5,6 +5,7 @@ import categoryRoutes from "./category.routes.js";
 import productRoutes from "./product.routes.js";
 import inventoryRoutes from "./inventory.routes.js";
 import notificationRoutes from "./notification.routes.js";
+import transferRoutes from "./transfer.routes.js";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
 router.use("/inventory", inventoryRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/transfers", transferRoutes);
 
 export default router;

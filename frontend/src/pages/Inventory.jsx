@@ -228,7 +228,7 @@ export default function Inventory() {
                   <th>Category</th>
                   <th>Quantity</th>
                   <th>Reorder Level</th>
-                  <th>Low Stock</th>
+                  <th>Stock</th>
                 </tr>
               </thead>
               <tbody>

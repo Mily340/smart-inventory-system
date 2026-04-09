@@ -5,6 +5,7 @@ import Categories from "./pages/Categories";
 import Products from "./pages/Products";
 import Inventory from "./pages/Inventory";
 import Notifications from "./pages/Notifications";
+import Transfers from "./pages/Transfers";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -45,6 +46,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Inventory />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/transfers"
+          element={
+            <ProtectedRoute>
+              <Transfers />
             </ProtectedRoute>
           }
         />
