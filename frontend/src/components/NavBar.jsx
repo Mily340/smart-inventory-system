@@ -38,6 +38,12 @@ export default function NavBar() {
           <Link className={isActive("/distributors")} to="/distributors">
             Distributors
           </Link>
+          <Link className={isActive("/orders")} to="/orders">
+            Orders
+          </Link>
+          <Link className={isActive("/deliveries")} to="/deliveries">
+            Deliveries
+          </Link>
           <Link className={isActive("/notifications")} to="/notifications">
             Notifications
           </Link>

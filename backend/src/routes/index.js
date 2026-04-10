@@ -8,6 +8,7 @@ import notificationRoutes from "./notification.routes.js";
 import transferRoutes from "./transfer.routes.js";
 import orderRoutes from "./order.routes.js";
 import distributorRoutes from "./distributor.routes.js";
+import deliveryRoutes from "./delivery.routes.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/notifications", notificationRoutes);
 router.use("/transfers", transferRoutes);
 router.use("/orders", orderRoutes);
 router.use("/distributors", distributorRoutes);
+router.use("/deliveries", deliveryRoutes);
 
 export default router;

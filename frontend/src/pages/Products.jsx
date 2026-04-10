@@ -13,6 +13,7 @@ export default function Products() {
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("pcs");
+  const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
 
@@ -52,12 +53,14 @@ export default function Products() {
         sku,
         name,
         unit,
+        price: Number(price),
         description: description || null,
         categoryId,
       });
       setSku("");
       setName("");
       setUnit("pcs");
+      setPrice("");
       setDescription("");
       fetchAll();
     } catch (err) {
@@ -109,7 +112,17 @@ export default function Products() {
                 />
               </div>
 
-              <div className="col-md-3">
+              <div className="col-md-2">
+                <input
+                  className="form-control"
+                  placeholder="Price"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="col-md-2">
                 <select
                   className="form-select"
                   value={categoryId}
@@ -118,13 +131,14 @@ export default function Products() {
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.code ? `${c.code} - ` : ""}{c.name}
+                      {c.code ? `${c.code} - ` : ""}
+                      {c.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div className="col-md-2">
+              <div className="col-md-1">
                 <button className="btn btn-primary w-100">Create</button>
               </div>
 
@@ -152,6 +166,7 @@ export default function Products() {
                   <th>Name</th>
                   <th>Category</th>
                   <th>Unit</th>
+                  <th>Price</th>
                   <th>Description</th>
                 </tr>
               </thead>
@@ -163,13 +178,14 @@ export default function Products() {
                     <td>{p.name}</td>
                     <td>{p.category?.name || "-"}</td>
                     <td>{p.unit}</td>
+                    <td>{p.price ?? "-"}</td>
                     <td>{p.description || "-"}</td>
                   </tr>
                 ))}
 
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center">
+                    <td colSpan="7" className="text-center">
                       No products found
                     </td>
                   </tr>

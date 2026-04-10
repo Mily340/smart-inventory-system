@@ -6,6 +6,12 @@ const nextCode = (prefix, lastNumber) => {
   return `${prefix}${String(n).padStart(3, "0")}`;
 };
 
+const ensurePositiveNumber = (value, fieldName) => {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) throw new ApiError(400, `${fieldName} must be a positive number`);
+  return n;
+};
+
 export const getAllProducts = async () => {
   return prisma.product.findMany({
     include: { category: true },
@@ -13,7 +19,14 @@ export const getAllProducts = async () => {
   });
 };
 
-export const createProduct = async ({ sku, name, description, unit, categoryId }) => {
+export const createProduct = async ({ sku, name, description, unit, price, categoryId }) => {
+  if (!sku) throw new ApiError(400, "sku is required");
+  if (!name) throw new ApiError(400, "name is required");
+  if (!unit) throw new ApiError(400, "unit is required");
+  if (!categoryId) throw new ApiError(400, "categoryId is required");
+
+  const p = ensurePositiveNumber(price, "price");
+
   const dupSku = await prisma.product.findUnique({ where: { sku } });
   if (dupSku) throw new ApiError(409, "SKU already exists");
 
@@ -30,7 +43,15 @@ export const createProduct = async ({ sku, name, description, unit, categoryId }
   const code = nextCode("P", lastNum);
 
   return prisma.product.create({
-    data: { code, sku, name, description: description || null, unit, categoryId },
+    data: {
+      code,
+      sku,
+      name,
+      description: description || null,
+      unit,
+      price: p,
+      categoryId,
+    },
     include: { category: true },
   });
 };
@@ -39,7 +60,7 @@ export const updateProduct = async (id, payload) => {
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Product not found");
 
-  const { id: _ignoreId, code: _ignoreCode, ...data } = payload; // do not allow changing id/code
+  const { id: _ignoreId, code: _ignoreCode, ...data } = payload;
 
   if (data.sku && data.sku !== existing.sku) {
     const dupSku = await prisma.product.findUnique({ where: { sku: data.sku } });
@@ -49,6 +70,10 @@ export const updateProduct = async (id, payload) => {
   if (data.categoryId) {
     const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
     if (!category) throw new ApiError(400, "Invalid categoryId");
+  }
+
+  if (data.price !== undefined) {
+    data.price = ensurePositiveNumber(data.price, "price");
   }
 
   return prisma.product.update({

@@ -118,6 +118,7 @@ model Product {
   name                String
   description         String?
   unit                String
+  price               Float              @default(0)
   categoryId          String             @map("category_id")
   createdAt           DateTime           @default(now()) @map("created_at")
   updatedAt           DateTime           @updatedAt @map("updated_at")
@@ -297,6 +298,7 @@ model Payment {
 
   @@map("payments")
 }
+
 enum NotificationType {
   LOW_STOCK
   TRANSFER_STATUS
@@ -311,7 +313,6 @@ model Notification {
   message   String
   isRead    Boolean          @default(false) @map("is_read")
 
-  // target (optional filters)
   userId    String?          @map("user_id")
   branchId  String?          @map("branch_id")
   role      Role?

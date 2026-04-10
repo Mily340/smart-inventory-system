@@ -7,12 +7,6 @@ const ensurePositiveInt = (value, fieldName) => {
   return n;
 };
 
-const ensurePositiveNumber = (value, fieldName) => {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) throw new ApiError(400, `${fieldName} must be a positive number`);
-  return n;
-};
-
 const nextCode = (prefix, lastNumber) => {
   const n = (lastNumber || 0) + 1;
   return `${prefix}${String(n).padStart(3, "0")}`;
@@ -24,7 +18,7 @@ const notifyOrder = async (tx, order, title, message) => {
       type: "ORDER_STATUS",
       title,
       message,
-      branchId: order.branchId, // notify that branch
+      branchId: order.branchId,
     },
   });
 };
@@ -46,6 +40,7 @@ export const listOrders = async ({ branchId }) => {
   });
 };
 
+// NEW: items: [{ productId, quantity }] (no unitPrice from client)
 export const createOrder = async ({ distributorId, branchId, items }, user) => {
   if (!distributorId) throw new ApiError(400, "distributorId is required");
   if (!branchId) throw new ApiError(400, "branchId is required");
@@ -57,26 +52,27 @@ export const createOrder = async ({ distributorId, branchId, items }, user) => {
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) throw new ApiError(400, "Invalid branchId");
 
-  // items: [{productId, quantity, unitPrice}]
-  const normalizedItems = items.map((it, idx) => {
+  // validate + fetch prices
+  const normalizedItems = [];
+  for (let idx = 0; idx < items.length; idx++) {
+    const it = items[idx];
     if (!it.productId) throw new ApiError(400, `items[${idx}].productId is required`);
     const quantity = ensurePositiveInt(it.quantity, `items[${idx}].quantity`);
-    const unitPrice = ensurePositiveNumber(it.unitPrice, `items[${idx}].unitPrice`);
-    const subtotal = Number((quantity * unitPrice).toFixed(2));
-    return { productId: it.productId, quantity, unitPrice, subtotal };
-  });
 
-  // validate products exist
-  for (const it of normalizedItems) {
-    const p = await prisma.product.findUnique({ where: { id: it.productId } });
-    if (!p) throw new ApiError(400, "Invalid productId in items");
+    const product = await prisma.product.findUnique({ where: { id: it.productId } });
+    if (!product) throw new ApiError(400, "Invalid productId in items");
+
+    const unitPrice = Number(product.price);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      throw new ApiError(400, `Product price is invalid for ${product.name}`);
+    }
+
+    const subtotal = Number((quantity * unitPrice).toFixed(2));
+    normalizedItems.push({ productId: it.productId, quantity, unitPrice, subtotal });
   }
 
-  const totalAmount = Number(
-    normalizedItems.reduce((sum, it) => sum + it.subtotal, 0).toFixed(2)
-  );
+  const totalAmount = Number(normalizedItems.reduce((sum, it) => sum + it.subtotal, 0).toFixed(2));
 
-  // code generation (assumes your Order model has `code` field already)
   const last = await prisma.order.findFirst({
     where: { code: { not: null } },
     orderBy: { createdAt: "desc" },
@@ -109,7 +105,7 @@ const allowedTransitions = {
   PENDING: ["APPROVED", "CANCELLED"],
   APPROVED: ["PACKED", "CANCELLED"],
   PACKED: ["DISPATCHED", "CANCELLED"],
-  DISPATCHED: ["DELIVERED", "FAILED", "CANCELLED"], // if you keep FAILED in DeliveryStatus only, remove FAILED here
+  DISPATCHED: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
   CANCELLED: [],
 };
@@ -131,9 +127,7 @@ export const updateOrderStatus = async (id, { status }, user) => {
       throw new ApiError(400, `Invalid status transition: ${current} -> ${status}`);
     }
 
-    // Deduct inventory when APPROVED (one clear rule)
     if (status === "APPROVED") {
-      // check stock
       for (const item of order.items) {
         const inv = await tx.inventory.findUnique({
           where: { branchId_productId: { branchId: order.branchId, productId: item.productId } },
@@ -143,7 +137,6 @@ export const updateOrderStatus = async (id, { status }, user) => {
         }
       }
 
-      // deduct + record ORDER_OUT transactions
       for (const item of order.items) {
         await tx.inventory.update({
           where: { branchId_productId: { branchId: order.branchId, productId: item.productId } },
