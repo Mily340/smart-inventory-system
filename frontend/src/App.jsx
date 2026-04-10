@@ -8,6 +8,7 @@ import Transfers from "./pages/Transfers";
 import Distributors from "./pages/Distributors";
 import Orders from "./pages/Orders";
 import Deliveries from "./pages/Deliveries";
+import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -85,6 +86,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Deliveries />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Reports />
             </ProtectedRoute>
           }
         />
