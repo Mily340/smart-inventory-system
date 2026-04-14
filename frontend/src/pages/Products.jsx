@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import NavBar from "../components/NavBar";
@@ -10,6 +10,7 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Create form
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("pcs");
@@ -17,23 +18,43 @@ export default function Products() {
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
 
+  // Edit modal state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [editSku, setEditSku] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editUnit, setEditUnit] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const categoryById = useMemo(() => {
+    const map = new Map();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
+
   const fetchAll = async () => {
     setError("");
     setLoading(true);
     try {
-      const [pRes, cRes] = await Promise.all([
-        client.get("/products"),
-        client.get("/categories"),
-      ]);
-      setProducts(pRes.data?.data || []);
+      const [pRes, cRes] = await Promise.all([client.get("/products"), client.get("/categories")]);
+
+      const prods = pRes.data?.data || [];
       const cats = cRes.data?.data || [];
+
+      setProducts(prods);
       setCategories(cats);
+
       if (!categoryId && cats.length > 0) setCategoryId(cats[0].id);
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load data";
       setError(msg);
       if (msg.toLowerCase().includes("unauthorized")) {
         localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("fullName");
         navigate("/login");
       }
     } finally {
@@ -43,6 +64,7 @@ export default function Products() {
 
   useEffect(() => {
     fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createProduct = async (e) => {
@@ -57,6 +79,7 @@ export default function Products() {
         description: description || null,
         categoryId,
       });
+
       setSku("");
       setName("");
       setUnit("pcs");
@@ -65,6 +88,49 @@ export default function Products() {
       fetchAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create product");
+    }
+  };
+
+  const openEdit = (p) => {
+    setError("");
+    setEditId(p.id);
+    setEditSku(p.sku || "");
+    setEditName(p.name || "");
+    setEditUnit(p.unit || "");
+    setEditPrice(p.price ?? "");
+    setEditDescription(p.description || "");
+    setEditCategoryId(p.categoryId || p.category?.id || (categories[0]?.id || ""));
+    setEditOpen(true);
+  };
+
+  const closeEdit = () => {
+    if (savingEdit) return;
+    setEditOpen(false);
+    setEditId("");
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSavingEdit(true);
+
+    try {
+      await client.put(`/products/${editId}`, {
+        sku: editSku,
+        name: editName,
+        unit: editUnit,
+        price: Number(editPrice),
+        description: editDescription || null,
+        categoryId: editCategoryId,
+      });
+
+      setEditOpen(false);
+      setEditId("");
+      await fetchAll();
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to update product");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -77,6 +143,7 @@ export default function Products() {
 
         {error ? <div className="alert alert-danger">{error}</div> : null}
 
+        {/* Create */}
         <div className="card mb-4">
           <div className="card-body">
             <h6 className="card-title">Create Product</h6>
@@ -154,6 +221,7 @@ export default function Products() {
           </div>
         </div>
 
+        {/* List */}
         {loading ? (
           <div>Loading...</div>
         ) : (
@@ -168,6 +236,7 @@ export default function Products() {
                   <th>Unit</th>
                   <th>Price</th>
                   <th>Description</th>
+                  <th style={{ width: 120 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -176,16 +245,24 @@ export default function Products() {
                     <td>{p.code || "-"}</td>
                     <td>{p.sku}</td>
                     <td>{p.name}</td>
-                    <td>{p.category?.name || "-"}</td>
+                    <td>{p.category?.name || categoryById.get(p.categoryId)?.name || "-"}</td>
                     <td>{p.unit}</td>
                     <td>{p.price ?? "-"}</td>
                     <td>{p.description || "-"}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => openEdit(p)}
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
 
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="text-center">
+                    <td colSpan="8" className="text-center">
                       No products found
                     </td>
                   </tr>
@@ -195,6 +272,107 @@ export default function Products() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal (Bootstrap style without JS dependency) */}
+      {editOpen ? (
+        <>
+          <div className="modal show" style={{ display: "block" }} tabIndex="-1">
+            <div className="modal-dialog modal-lg">
+              <div className="modal-content">
+                <form onSubmit={saveEdit}>
+                  <div className="modal-header">
+                    <h5 className="modal-title">Edit Product</h5>
+                    <button type="button" className="btn-close" onClick={closeEdit} />
+                  </div>
+
+                  <div className="modal-body">
+                    <div className="row g-2">
+                      <div className="col-md-4">
+                        <label className="form-label">SKU</label>
+                        <input
+                          className="form-control"
+                          value={editSku}
+                          onChange={(e) => setEditSku(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="col-md-4">
+                        <label className="form-label">Name</label>
+                        <input
+                          className="form-control"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="col-md-4">
+                        <label className="form-label">Unit</label>
+                        <input
+                          className="form-control"
+                          value={editUnit}
+                          onChange={(e) => setEditUnit(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="col-md-4">
+                        <label className="form-label">Price</label>
+                        <input
+                          className="form-control"
+                          value={editPrice}
+                          onChange={(e) => setEditPrice(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="col-md-8">
+                        <label className="form-label">Category</label>
+                        <select
+                          className="form-select"
+                          value={editCategoryId}
+                          onChange={(e) => setEditCategoryId(e.target.value)}
+                          required
+                        >
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.code ? `${c.code} - ` : ""}
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-12">
+                        <label className="form-label">Description</label>
+                        <input
+                          className="form-control"
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          placeholder="Optional"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-outline-secondary" onClick={closeEdit}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-primary" disabled={savingEdit}>
+                      {savingEdit ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {/* Backdrop */}
+          <div className="modal-backdrop fade show" onClick={closeEdit} />
+        </>
+      ) : null}
     </>
   );
 }

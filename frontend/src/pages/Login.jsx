@@ -6,8 +6,14 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("Admin123@");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const redirectByRole = (role) => {
+    if (role === "DELIVERY_RIDER") return "/deliveries";
+    return "/branches";
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -16,12 +22,17 @@ export default function Login() {
 
     try {
       const res = await client.post("/auth/login", { email, password });
+
       const token = res.data?.data?.token;
+      const user = res.data?.data?.user;
 
       if (!token) throw new Error("Token not found in response");
 
       localStorage.setItem("token", token);
-      navigate("/branches");
+      if (user?.role) localStorage.setItem("role", user.role);
+      if (user?.fullName) localStorage.setItem("fullName", user.fullName);
+
+      navigate(redirectByRole(user?.role), { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Login failed");
     } finally {
@@ -48,18 +59,50 @@ export default function Login() {
 
         <div className="mb-3">
           <label className="form-label">Password</label>
-          <input
-            className="form-control"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
+
+          <div className="input-group">
+            <input
+              className="form-control"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onMouseEnter={() => setShowPassword(true)}
+              onMouseLeave={() => setShowPassword(false)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setShowPassword(true);
+              }}
+              onMouseUp={() => setShowPassword(false)}
+              onTouchStart={() => setShowPassword(true)}
+              onTouchEnd={() => setShowPassword(false)}
+              aria-label="Hover/hold to show password"
+              title="Hold to show password"
+            >
+              <i className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"} />
+            </button>
+          </div>
         </div>
 
         <button className="btn btn-primary w-100" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
+
+        <div className="text-center mt-3">
+          <span className="text-muted">New user?</span>{" "}
+          <button
+            type="button"
+            className="btn btn-link p-0"
+            onClick={() => navigate("/register")}
+          >
+            Submit a registration request
+          </button>
+        </div>
       </form>
     </div>
   );

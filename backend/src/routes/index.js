@@ -10,6 +10,8 @@ import orderRoutes from "./order.routes.js";
 import distributorRoutes from "./distributor.routes.js";
 import deliveryRoutes from "./delivery.routes.js";
 import reportRoutes from "./report.routes.js";
+import registrationRoutes from "./registrationRequest.routes.js";
+import userRoutes from "./user.routes.js";
 
 const router = Router();
 
@@ -24,5 +26,7 @@ router.use("/orders", orderRoutes);
 router.use("/distributors", distributorRoutes);
 router.use("/deliveries", deliveryRoutes);
 router.use("/reports", reportRoutes);
+router.use("/", registrationRoutes);
+router.use("/users", userRoutes);
 
 export default router;

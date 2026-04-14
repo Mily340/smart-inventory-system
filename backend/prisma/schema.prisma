@@ -57,244 +57,246 @@ enum DeliveryStatus {
 }
 
 model User {
-  id                  String             @id @default(uuid())
-  code                String?            @unique // U001, U002...
-  fullName            String             @map("full_name")
-  email               String             @unique
-  password            String
-  role                Role
-  branchId            String?            @map("branch_id")
-  createdAt           DateTime           @default(now()) @map("created_at")
-  updatedAt           DateTime           @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  code      String?  @unique // U001, U002...
+  fullName  String   @map("full_name")
+  email     String   @unique
+  password  String
+  role      Role
+  branchId  String?  @map("branch_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  branch              Branch?            @relation(fields: [branchId], references: [id])
-  stockTransactions   StockTransaction[]
-  requestedTransfers  TransferRequest[]  @relation("RequestedTransfers")
-  approvedTransfers   TransferRequest[]  @relation("ApprovedTransfers")
-  createdOrders       Order[]
-  assignedDeliveries  Delivery[]
-  notifications       Notification[]
+  branch             Branch?            @relation(fields: [branchId], references: [id])
+  stockTransactions  StockTransaction[]
+  requestedTransfers TransferRequest[]  @relation("RequestedTransfers")
+  approvedTransfers  TransferRequest[]  @relation("ApprovedTransfers")
+  createdOrders      Order[]
+  assignedDeliveries Delivery[]
+  notifications      Notification[]
 
   @@map("users")
 }
 
 model Branch {
-  id                  String            @id @default(uuid())
-  code                String?           @unique // B001, B002...
-  name                String
-  address             String
-  latitude            Float
-  longitude           Float
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime          @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  code      String?  @unique // B001, B002...
+  name      String
+  address   String
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  users               User[]
-  inventoryItems      Inventory[]
-  stockTransactions   StockTransaction[]
-  outgoingTransfers   TransferRequest[] @relation("FromBranch")
-  incomingTransfers   TransferRequest[] @relation("ToBranch")
-  orders              Order[]
-  notifications       Notification[]
+  users             User[]
+  inventoryItems    Inventory[]
+  stockTransactions StockTransaction[]
+  outgoingTransfers TransferRequest[]  @relation("FromBranch")
+  incomingTransfers TransferRequest[]  @relation("ToBranch")
+  orders            Order[]
+  notifications     Notification[]
+
+  registrationRequests RegistrationRequest[] // ✅ added (fix)
 
   @@map("branches")
 }
 
 model Category {
-  id                  String            @id @default(uuid())
-  code                String?           @unique // C001, C002...
-  name                String            @unique
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime          @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  code      String?  @unique // C001, C002...
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  products            Product[]
+  products Product[]
 
   @@map("categories")
 }
 
 model Product {
-  id                  String             @id @default(uuid())
-  code                String?            @unique // P001, P002...
-  sku                 String             @unique
-  name                String
-  description         String?
-  unit                String
-  price               Float              @default(0)
-  categoryId          String             @map("category_id")
-  createdAt           DateTime           @default(now()) @map("created_at")
-  updatedAt           DateTime           @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  code        String?  @unique // P001, P002...
+  sku         String   @unique
+  name        String
+  description String?
+  unit        String
+  price       Float    @default(0)
+  categoryId  String   @map("category_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  category            Category           @relation(fields: [categoryId], references: [id])
-  inventoryItems      Inventory[]
-  stockTransactions   StockTransaction[]
-  transferItems       TransferItem[]
-  orderItems          OrderItem[]
+  category          Category           @relation(fields: [categoryId], references: [id])
+  inventoryItems    Inventory[]
+  stockTransactions StockTransaction[]
+  transferItems     TransferItem[]
+  orderItems        OrderItem[]
 
   @@map("products")
 }
 
 model Inventory {
-  id                  String    @id @default(uuid())
-  branchId            String    @map("branch_id")
-  productId           String    @map("product_id")
-  quantity            Int       @default(0)
-  reorderLevel        Int       @default(0) @map("reorder_level")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  branchId     String   @map("branch_id")
+  productId    String   @map("product_id")
+  quantity     Int      @default(0)
+  reorderLevel Int      @default(0) @map("reorder_level")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  branch              Branch    @relation(fields: [branchId], references: [id])
-  product             Product   @relation(fields: [productId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@unique([branchId, productId])
   @@map("inventory")
 }
 
 model StockTransaction {
-  id                  String                @id @default(uuid())
-  branchId            String                @map("branch_id")
-  productId           String                @map("product_id")
-  type                StockTransactionType
-  quantity            Int
-  reason              String?
-  referenceType       String?               @map("reference_type")
-  referenceId         String?               @map("reference_id")
-  createdBy           String                @map("created_by")
-  createdAt           DateTime              @default(now()) @map("created_at")
+  id            String               @id @default(uuid())
+  branchId      String               @map("branch_id")
+  productId     String               @map("product_id")
+  type          StockTransactionType
+  quantity      Int
+  reason        String?
+  referenceType String?              @map("reference_type")
+  referenceId   String?              @map("reference_id")
+  createdBy     String               @map("created_by")
+  createdAt     DateTime             @default(now()) @map("created_at")
 
-  branch              Branch                @relation(fields: [branchId], references: [id])
-  product             Product               @relation(fields: [productId], references: [id])
-  user                User                  @relation(fields: [createdBy], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [createdBy], references: [id])
 
   @@map("stock_transactions")
 }
 
 model TransferRequest {
-  id                  String          @id @default(uuid())
-  fromBranchId        String          @map("from_branch_id")
-  toBranchId          String          @map("to_branch_id")
-  requestedBy         String          @map("requested_by")
-  approvedBy          String?         @map("approved_by")
-  status              TransferStatus  @default(PENDING)
-  requestDate         DateTime        @default(now()) @map("request_date")
-  dispatchDate        DateTime?       @map("dispatch_date")
-  receiveDate         DateTime?       @map("receive_date")
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  id           String         @id @default(uuid())
+  fromBranchId String         @map("from_branch_id")
+  toBranchId   String         @map("to_branch_id")
+  requestedBy  String         @map("requested_by")
+  approvedBy   String?        @map("approved_by")
+  status       TransferStatus @default(PENDING)
+  requestDate  DateTime       @default(now()) @map("request_date")
+  dispatchDate DateTime?      @map("dispatch_date")
+  receiveDate  DateTime?      @map("receive_date")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
 
-  fromBranch          Branch          @relation("FromBranch", fields: [fromBranchId], references: [id])
-  toBranch            Branch          @relation("ToBranch", fields: [toBranchId], references: [id])
-  requester           User            @relation("RequestedTransfers", fields: [requestedBy], references: [id])
-  approver            User?           @relation("ApprovedTransfers", fields: [approvedBy], references: [id])
-  items               TransferItem[]
+  fromBranch Branch         @relation("FromBranch", fields: [fromBranchId], references: [id])
+  toBranch   Branch         @relation("ToBranch", fields: [toBranchId], references: [id])
+  requester  User           @relation("RequestedTransfers", fields: [requestedBy], references: [id])
+  approver   User?          @relation("ApprovedTransfers", fields: [approvedBy], references: [id])
+  items      TransferItem[]
 
   @@map("transfer_requests")
 }
 
 model TransferItem {
-  id                  String           @id @default(uuid())
-  transferRequestId   String           @map("transfer_request_id")
-  productId           String           @map("product_id")
-  quantity            Int
-  createdAt           DateTime         @default(now()) @map("created_at")
+  id                String   @id @default(uuid())
+  transferRequestId String   @map("transfer_request_id")
+  productId         String   @map("product_id")
+  quantity          Int
+  createdAt         DateTime @default(now()) @map("created_at")
 
-  transferRequest     TransferRequest  @relation(fields: [transferRequestId], references: [id])
-  product             Product          @relation(fields: [productId], references: [id])
+  transferRequest TransferRequest @relation(fields: [transferRequestId], references: [id])
+  product         Product         @relation(fields: [productId], references: [id])
 
   @@map("transfer_items")
 }
 
 model Distributor {
-  id                  String          @id @default(uuid())
-  code                String?         @unique // D001, D002...
-  name                String
-  email               String          @unique
-  phone               String?
-  address             String?
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  code      String?  @unique // D001, D002...
+  name      String
+  email     String   @unique
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  orders              Order[]
+  orders Order[]
 
   @@map("distributors")
 }
 
 model Order {
-  id                  String          @id @default(uuid())
-  code                String?         @unique // O001, O002...
-  distributorId       String          @map("distributor_id")
-  branchId            String          @map("branch_id")
-  createdBy           String          @map("created_by")
-  status              OrderStatus     @default(PENDING)
-  paymentStatus       PaymentStatus   @default(UNPAID) @map("payment_status")
-  totalAmount         Float           @default(0) @map("total_amount")
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  id            String        @id @default(uuid())
+  code          String?       @unique // O001, O002...
+  distributorId String        @map("distributor_id")
+  branchId      String        @map("branch_id")
+  createdBy     String        @map("created_by")
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  totalAmount   Float         @default(0) @map("total_amount")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  distributor         Distributor     @relation(fields: [distributorId], references: [id])
-  branch              Branch          @relation(fields: [branchId], references: [id])
-  creator             User            @relation(fields: [createdBy], references: [id])
-  items               OrderItem[]
-  delivery            Delivery?
-  payments            Payment[]
+  distributor Distributor @relation(fields: [distributorId], references: [id])
+  branch      Branch      @relation(fields: [branchId], references: [id])
+  creator     User        @relation(fields: [createdBy], references: [id])
+  items       OrderItem[]
+  delivery    Delivery?
+  payments    Payment[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id                  String          @id @default(uuid())
-  orderId             String          @map("order_id")
-  productId           String          @map("product_id")
-  quantity            Int
-  unitPrice           Float           @map("unit_price")
-  subtotal            Float
+  id        String @id @default(uuid())
+  orderId   String @map("order_id")
+  productId String @map("product_id")
+  quantity  Int
+  unitPrice Float  @map("unit_price")
+  subtotal  Float
 
-  order               Order           @relation(fields: [orderId], references: [id])
-  product             Product         @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
 
 model Delivery {
-  id                  String           @id @default(uuid())
-  code                String?          @unique // DL001...
-  orderId             String           @unique @map("order_id")
-  riderId             String           @map("rider_id")
-  status              DeliveryStatus   @default(ASSIGNED)
-  destinationAddress  String?          @map("destination_address")
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @updatedAt @map("updated_at")
+  id                 String         @id @default(uuid())
+  code               String?        @unique // DL001...
+  orderId            String         @unique @map("order_id")
+  riderId            String         @map("rider_id")
+  status             DeliveryStatus @default(ASSIGNED)
+  destinationAddress String?        @map("destination_address")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
 
-  order               Order            @relation(fields: [orderId], references: [id])
-  rider               User             @relation(fields: [riderId], references: [id])
-  locations           DeliveryLocation[]
+  order     Order              @relation(fields: [orderId], references: [id])
+  rider     User               @relation(fields: [riderId], references: [id])
+  locations DeliveryLocation[]
 
   @@map("deliveries")
 }
 
 model DeliveryLocation {
-  id                  String      @id @default(uuid())
-  deliveryId          String      @map("delivery_id")
-  latitude            Float
-  longitude           Float
-  recordedAt          DateTime    @default(now()) @map("recorded_at")
+  id         String   @id @default(uuid())
+  deliveryId String   @map("delivery_id")
+  latitude   Float
+  longitude  Float
+  recordedAt DateTime @default(now()) @map("recorded_at")
 
-  delivery            Delivery    @relation(fields: [deliveryId], references: [id])
+  delivery Delivery @relation(fields: [deliveryId], references: [id])
 
   @@map("delivery_locations")
 }
 
 model Payment {
-  id                  String         @id @default(uuid())
-  code                String?        @unique // PAY001...
-  orderId             String         @map("order_id")
-  stripeSessionId     String?        @map("stripe_session_id")
-  stripePaymentIntent String?        @map("stripe_payment_intent")
+  id                  String        @id @default(uuid())
+  code                String?       @unique // PAY001...
+  orderId             String        @map("order_id")
+  stripeSessionId     String?       @map("stripe_session_id")
+  stripePaymentIntent String?       @map("stripe_payment_intent")
   amount              Float
-  currency            String         @default("usd")
-  status              PaymentStatus  @default(UNPAID)
-  paidAt              DateTime?      @map("paid_at")
-  createdAt           DateTime       @default(now()) @map("created_at")
+  currency            String        @default("usd")
+  status              PaymentStatus @default(UNPAID)
+  paidAt              DateTime?     @map("paid_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
 
-  order               Order          @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 
   @@map("payments")
 }
@@ -307,23 +309,42 @@ enum NotificationType {
 }
 
 model Notification {
-  id        String           @id @default(uuid())
-  type      NotificationType
-  title     String
-  message   String
-  isRead    Boolean          @default(false) @map("is_read")
+  id      String           @id @default(uuid())
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false) @map("is_read")
 
-  userId    String?          @map("user_id")
-  branchId  String?          @map("branch_id")
-  role      Role?
+  userId   String? @map("user_id")
+  branchId String? @map("branch_id")
+  role     Role?
 
-  createdAt DateTime         @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  user      User?            @relation(fields: [userId], references: [id])
-  branch    Branch?          @relation(fields: [branchId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
 
   @@index([userId])
   @@index([branchId])
   @@index([isRead])
   @@map("notifications")
+}
+
+model RegistrationRequest {
+  id       String  @id @default(uuid())
+  fullName String  @map("full_name")
+  email    String  @unique
+  password String
+  role     Role
+  branchId String? @map("branch_id")
+
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedBy String?   @map("reviewed_by")
+  reviewedAt DateTime? @map("reviewed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  @@map("registration_requests")
 }
