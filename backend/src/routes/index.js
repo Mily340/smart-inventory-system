@@ -12,6 +12,7 @@ import deliveryRoutes from "./delivery.routes.js";
 import reportRoutes from "./report.routes.js";
 import registrationRoutes from "./registrationRequest.routes.js";
 import userRoutes from "./user.routes.js";
+import publicRoutes from "./public.routes.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/deliveries", deliveryRoutes);
 router.use("/reports", reportRoutes);
 router.use("/", registrationRoutes);
 router.use("/users", userRoutes);
+router.use("/", publicRoutes);
 
 export default router;

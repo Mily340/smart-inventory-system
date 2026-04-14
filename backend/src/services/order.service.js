@@ -40,64 +40,86 @@ export const listOrders = async ({ branchId }) => {
   });
 };
 
-// NEW: items: [{ productId, quantity }] (no unitPrice from client)
 export const createOrder = async ({ distributorId, branchId, items }, user) => {
   if (!distributorId) throw new ApiError(400, "distributorId is required");
   if (!branchId) throw new ApiError(400, "branchId is required");
   if (!Array.isArray(items) || items.length === 0) throw new ApiError(400, "items is required");
 
-  const distributor = await prisma.distributor.findUnique({ where: { id: distributorId } });
-  if (!distributor) throw new ApiError(400, "Invalid distributorId");
+  return prisma.$transaction(async (tx) => {
+    const distributor = await tx.distributor.findUnique({ where: { id: distributorId } });
+    if (!distributor) throw new ApiError(400, "Invalid distributorId");
 
-  const branch = await prisma.branch.findUnique({ where: { id: branchId } });
-  if (!branch) throw new ApiError(400, "Invalid branchId");
+    const branch = await tx.branch.findUnique({ where: { id: branchId } });
+    if (!branch) throw new ApiError(400, "Invalid branchId");
 
-  // validate + fetch prices
-  const normalizedItems = [];
-  for (let idx = 0; idx < items.length; idx++) {
-    const it = items[idx];
-    if (!it.productId) throw new ApiError(400, `items[${idx}].productId is required`);
-    const quantity = ensurePositiveInt(it.quantity, `items[${idx}].quantity`);
+    // Build items using REAL product price and check stock
+    const normalizedItems = [];
+    for (let idx = 0; idx < items.length; idx++) {
+      const it = items[idx];
+      if (!it?.productId) throw new ApiError(400, `items[${idx}].productId is required`);
 
-    const product = await prisma.product.findUnique({ where: { id: it.productId } });
-    if (!product) throw new ApiError(400, "Invalid productId in items");
+      const quantity = ensurePositiveInt(it.quantity, `items[${idx}].quantity`);
 
-    const unitPrice = Number(product.price);
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-      throw new ApiError(400, `Product price is invalid for ${product.name}`);
+      const product = await tx.product.findUnique({ where: { id: it.productId } });
+      if (!product) throw new ApiError(400, `Invalid productId in items[${idx}]`);
+
+      const unitPrice = Number(product.price || 0);
+      if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+        throw new ApiError(400, `Product price is missing/invalid for ${product.name}`);
+      }
+
+      // Stock validation at CREATE time
+      const inv = await tx.inventory.findUnique({
+        where: { branchId_productId: { branchId, productId: it.productId } },
+      });
+
+      if (!inv) throw new ApiError(400, `No stock record for ${product.name} in this branch`);
+      if (inv.quantity < quantity) throw new ApiError(400, `Insufficient stock for ${product.name}`);
+
+      const subtotal = Number((quantity * unitPrice).toFixed(2));
+      normalizedItems.push({ productId: it.productId, quantity, unitPrice, subtotal });
     }
 
-    const subtotal = Number((quantity * unitPrice).toFixed(2));
-    normalizedItems.push({ productId: it.productId, quantity, unitPrice, subtotal });
-  }
+    const totalAmount = Number(
+      normalizedItems.reduce((sum, it) => sum + it.subtotal, 0).toFixed(2)
+    );
 
-  const totalAmount = Number(normalizedItems.reduce((sum, it) => sum + it.subtotal, 0).toFixed(2));
+    // Code generation: O001, O002...
+    const last = await tx.order.findFirst({
+      where: { code: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { code: true },
+    });
+    const lastNum = last?.code ? parseInt(String(last.code).replace("O", ""), 10) : 0;
+    const code = nextCode("O", Number.isNaN(lastNum) ? 0 : lastNum);
 
-  const last = await prisma.order.findFirst({
-    where: { code: { not: null } },
-    orderBy: { createdAt: "desc" },
-    select: { code: true },
-  });
-  const lastNum = last?.code ? parseInt(String(last.code).replace("O", ""), 10) : 0;
-  const code = nextCode("O", lastNum);
+    const created = await tx.order.create({
+      data: {
+        code,
+        distributorId,
+        branchId,
+        createdBy: user.id,
+        status: "PENDING",
+        paymentStatus: "UNPAID",
+        totalAmount,
+        items: { create: normalizedItems },
+      },
+      include: {
+        distributor: true,
+        branch: true,
+        creator: true,
+        items: { include: { product: true } },
+      },
+    });
 
-  return prisma.order.create({
-    data: {
-      code,
-      distributorId,
-      branchId,
-      createdBy: user.id,
-      status: "PENDING",
-      paymentStatus: "UNPAID",
-      totalAmount,
-      items: { create: normalizedItems },
-    },
-    include: {
-      distributor: true,
-      branch: true,
-      creator: true,
-      items: { include: { product: true } },
-    },
+    await notifyOrder(
+      tx,
+      created,
+      "Order created",
+      `Order ${created.code || created.id} created (PENDING)`
+    );
+
+    return created;
   });
 };
 
@@ -127,6 +149,7 @@ export const updateOrderStatus = async (id, { status }, user) => {
       throw new ApiError(400, `Invalid status transition: ${current} -> ${status}`);
     }
 
+    // Deduct inventory when APPROVED (confirm stock again)
     if (status === "APPROVED") {
       for (const item of order.items) {
         const inv = await tx.inventory.findUnique({

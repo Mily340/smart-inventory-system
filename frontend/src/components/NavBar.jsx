@@ -43,7 +43,12 @@ export default function NavBar() {
       <div className="bg-white border-top">
         <div className="container py-2">
           <nav className="navbar-nav flex-row flex-wrap gap-2 justify-content-center">
-            {/* Staff (Admin/Manager/Inventory) */}
+            {/* Public catalog link (everyone logged in can view) */}
+            <Link className={isActive("/catalog")} to="/catalog">
+              Catalog
+            </Link>
+
+            {/* Staff */}
             {isStaff ? (
               <>
                 <Link className={isActive("/branches")} to="/branches">
@@ -57,6 +62,9 @@ export default function NavBar() {
                 </Link>
                 <Link className={isActive("/inventory")} to="/inventory">
                   Inventory
+                </Link>
+                <Link className={isActive("/branch-stock")} to="/branch-stock">
+                  Branch Stock
                 </Link>
                 <Link className={isActive("/transfers")} to="/transfers">
                   Transfers

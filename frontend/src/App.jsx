@@ -4,10 +4,14 @@ import RegisterRequest from "./pages/RegisterRequest";
 import RegistrationRequests from "./pages/RegistrationRequests";
 import Users from "./pages/Users";
 
+import Catalog from "./pages/Catalog";
+import CatalogProduct from "./pages/CatalogProduct";
+
 import Branches from "./pages/Branches";
 import Categories from "./pages/Categories";
 import Products from "./pages/Products";
 import Inventory from "./pages/Inventory";
+import BranchStock from "./pages/BranchStock";
 import Transfers from "./pages/Transfers";
 import Distributors from "./pages/Distributors";
 import Orders from "./pages/Orders";
@@ -28,6 +32,8 @@ export default function App() {
         {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<RegisterRequest />} />
+        <Route path="/catalog" element={<Catalog />} />
+        <Route path="/catalog/:id" element={<CatalogProduct />} />
 
         {/* Staff */}
         <Route
@@ -62,6 +68,15 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={STAFF_ROLES}>
               <Inventory />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/branch-stock"
+          element={
+            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+              <BranchStock />
             </ProtectedRoute>
           }
         />
@@ -142,8 +157,9 @@ export default function App() {
           }
         />
 
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Home */}
+        <Route path="/" element={<Navigate to="/catalog" replace />} />
+        <Route path="*" element={<Navigate to="/catalog" replace />} />
       </Routes>
     </BrowserRouter>
   );

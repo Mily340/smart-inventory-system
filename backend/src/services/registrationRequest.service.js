@@ -2,6 +2,11 @@ import bcrypt from "bcryptjs";
 import prisma from "../db/prisma.js";
 import ApiError from "../utils/ApiError.js";
 
+const nextCode = (prefix, lastNumber) => {
+  const n = (lastNumber || 0) + 1;
+  return `${prefix}${String(n).padStart(3, "0")}`;
+};
+
 export const createRegistrationRequest = async ({
   fullName,
   email,
@@ -26,11 +31,13 @@ export const createRegistrationRequest = async ({
   const userExists = await prisma.user.findUnique({ where: { email } });
   if (userExists) throw new ApiError(409, "Email already exists as a user");
 
-  // if a pending request exists, block
+  // if a request exists, block
   const reqExists = await prisma.registrationRequest.findUnique({
     where: { email },
   });
-  if (reqExists) throw new ApiError(409, "Registration request already exists for this email");
+  if (reqExists) {
+    throw new ApiError(409, "Registration request already exists for this email");
+  }
 
   // validate branch
   if (branchId) {
@@ -76,11 +83,24 @@ export const approveRegistrationRequest = async (id, adminUser) => {
   return prisma.$transaction(async (tx) => {
     const req = await tx.registrationRequest.findUnique({ where: { id } });
     if (!req) throw new ApiError(404, "Registration request not found");
-    if (req.status !== "PENDING") throw new ApiError(400, "Only PENDING requests can be approved");
+    if (req.status !== "PENDING") {
+      throw new ApiError(400, "Only PENDING requests can be approved");
+    }
+
+    // Generate next user code (U001, U002, ...)
+    const last = await tx.user.findFirst({
+      where: { code: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { code: true },
+    });
+
+    const lastNum = last?.code ? parseInt(String(last.code).replace("U", ""), 10) : 0;
+    const code = nextCode("U", Number.isNaN(lastNum) ? 0 : lastNum);
 
     // create user
     const user = await tx.user.create({
       data: {
+        code, // ✅ important fix
         fullName: req.fullName,
         email: req.email,
         password: req.password,
@@ -125,7 +145,9 @@ export const approveRegistrationRequest = async (id, adminUser) => {
 export const rejectRegistrationRequest = async (id, adminUser, reason) => {
   const req = await prisma.registrationRequest.findUnique({ where: { id } });
   if (!req) throw new ApiError(404, "Registration request not found");
-  if (req.status !== "PENDING") throw new ApiError(400, "Only PENDING requests can be rejected");
+  if (req.status !== "PENDING") {
+    throw new ApiError(400, "Only PENDING requests can be rejected");
+  }
 
   await prisma.registrationRequest.update({
     where: { id },

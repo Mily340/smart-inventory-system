@@ -8,8 +8,10 @@ export default function Orders() {
 
   const [distributors, setDistributors] = useState([]);
   const [branches, setBranches] = useState([]);
-  const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+
+  // Inventory for selected branch
+  const [stockItems, setStockItems] = useState([]);
 
   const [distributorId, setDistributorId] = useState("");
   const [branchId, setBranchId] = useState("");
@@ -17,40 +19,82 @@ export default function Orders() {
   const [quantity, setQuantity] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [loadingStock, setLoadingStock] = useState(false);
   const [error, setError] = useState("");
+
+  const handleUnauthorized = (msg) => {
+    if (String(msg || "").toLowerCase().includes("unauthorized")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("fullName");
+      navigate("/login");
+      return true;
+    }
+    return false;
+  };
+
+  const fetchStockForBranch = async (bId) => {
+    if (!bId) return;
+
+    setLoadingStock(true);
+    try {
+      const res = await client.get(`/inventory?branchId=${bId}`);
+      const data = res.data?.data || [];
+
+      // Sort by product name for nicer dropdown
+      data.sort((a, b) => (a.product?.name || "").localeCompare(b.product?.name || ""));
+      setStockItems(data);
+
+      // If current selected product is not in this branch, reset to first available
+      const exists = data.some((it) => it.productId === productId);
+      if (!exists) {
+        const first = data[0];
+        setProductId(first ? first.productId : "");
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to load branch stock";
+      setError(msg);
+      handleUnauthorized(msg);
+      setStockItems([]);
+      setProductId("");
+    } finally {
+      setLoadingStock(false);
+    }
+  };
 
   const fetchAll = async () => {
     setError("");
     setLoading(true);
 
     try {
-      const [dRes, bRes, pRes, oRes] = await Promise.all([
+      const [dRes, bRes, oRes] = await Promise.all([
         client.get("/distributors"),
         client.get("/branches"),
-        client.get("/products"),
         client.get("/orders"),
       ]);
 
       const d = dRes.data?.data || [];
       const b = bRes.data?.data || [];
-      const p = pRes.data?.data || [];
       const o = oRes.data?.data || [];
 
       setDistributors(d);
       setBranches(b);
-      setProducts(p);
       setOrders(o);
 
-      if (!distributorId && d.length > 0) setDistributorId(d[0].id);
-      if (!branchId && b.length > 0) setBranchId(b[0].id);
-      if (!productId && p.length > 0) setProductId(p[0].id);
+      const nextDistributorId = distributorId || (d[0]?.id ?? "");
+      const nextBranchId = branchId || (b[0]?.id ?? "");
+
+      if (!distributorId && nextDistributorId) setDistributorId(nextDistributorId);
+      if (!branchId && nextBranchId) setBranchId(nextBranchId);
+
+      // load stock for initial/default branch
+      if (nextBranchId) {
+        await fetchStockForBranch(nextBranchId);
+      }
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load orders";
       setError(msg);
-      if (msg.toLowerCase().includes("unauthorized")) {
-        localStorage.removeItem("token");
-        navigate("/login");
-      }
+      handleUnauthorized(msg);
     } finally {
       setLoading(false);
     }
@@ -61,31 +105,60 @@ export default function Orders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectedProduct = useMemo(
-    () => products.find((p) => p.id === productId),
-    [products, productId]
+  // When branch changes, reload stock
+  useEffect(() => {
+    if (!branchId) return;
+    fetchStockForBranch(branchId);
+    // also reset qty when branch changes
+    setQuantity("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchId]);
+
+  const selectedStock = useMemo(
+    () => stockItems.find((it) => it.productId === productId),
+    [stockItems, productId]
   );
 
-  const unitPrice = Number(selectedProduct?.price || 0);
+  const availableQty = Number(selectedStock?.quantity ?? 0);
+  const unitPrice = Number(selectedStock?.product?.price ?? 0);
 
   const qtyNum = useMemo(() => {
     const n = Number(quantity);
     return Number.isInteger(n) ? n : NaN;
   }, [quantity]);
 
-  const canCreate = distributorId && branchId && productId && Number.isInteger(qtyNum) && qtyNum > 0 && unitPrice > 0;
+  const qtyValid = Number.isInteger(qtyNum) && qtyNum > 0 && qtyNum <= availableQty;
+
+  const canCreate =
+    distributorId &&
+    branchId &&
+    productId &&
+    unitPrice > 0 &&
+    availableQty > 0 &&
+    qtyValid &&
+    !loadingStock;
 
   const previewTotal = useMemo(() => {
-    if (!canCreate) return 0;
+    if (!qtyValid || unitPrice <= 0) return 0;
     return qtyNum * unitPrice;
-  }, [canCreate, qtyNum, unitPrice]);
+  }, [qtyValid, qtyNum, unitPrice]);
 
   const createOrder = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!canCreate) {
-      setError("Please select distributor, branch, product and enter a valid quantity.");
+    if (!distributorId || !branchId || !productId) {
+      setError("Please select distributor, branch and product.");
+      return;
+    }
+
+    if (availableQty <= 0) {
+      setError("Selected product is out of stock in this branch.");
+      return;
+    }
+
+    if (!qtyValid) {
+      setError(`Quantity must be between 1 and ${availableQty}.`);
       return;
     }
 
@@ -97,7 +170,7 @@ export default function Orders() {
       });
 
       setQuantity("");
-      fetchAll();
+      await fetchAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create order");
     }
@@ -219,27 +292,45 @@ export default function Orders() {
                 <select
                   className="form-select"
                   value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
+                  onChange={(e) => {
+                    setProductId(e.target.value);
+                    setQuantity("");
+                  }}
                   required
+                  disabled={loadingStock}
                 >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code ? `${p.code} - ` : ""}
-                      {p.name}
-                      {p.price ? ` (৳${p.price})` : ""}
+                  {stockItems.map((it) => (
+                    <option key={it.productId} value={it.productId} disabled={(it.quantity ?? 0) <= 0}>
+                      {it.product?.code ? `${it.product.code} - ` : ""}
+                      {it.product?.name}
+                      {typeof it.product?.price === "number" ? ` (৳${it.product.price})` : ""}
+                      {` | Avl: ${it.quantity ?? 0}`}
                     </option>
                   ))}
                 </select>
+
+                <div className="form-text">
+                  {loadingStock
+                    ? "Loading branch stock..."
+                    : stockItems.length === 0
+                    ? "No products stocked in this branch yet."
+                    : null}
+                </div>
               </div>
 
               <div className="col-md-1">
                 <input
-                  className="form-control"
+                  className={`form-control ${quantity && !qtyValid ? "is-invalid" : ""}`}
                   placeholder="Qty"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  required
+                  disabled={!productId || availableQty <= 0 || loadingStock}
                 />
+                {quantity && !qtyValid ? (
+                  <div className="invalid-feedback">
+                    Max {availableQty}
+                  </div>
+                ) : null}
               </div>
 
               <div className="col-md-1">
@@ -250,9 +341,9 @@ export default function Orders() {
 
               <div className="col-12">
                 <div className="small text-muted">
-                  Unit Price: <strong>{unitPrice ? `৳${unitPrice}` : "-"}</strong>
-                  {"  "} | Preview Total:{" "}
-                  <strong>{canCreate ? `৳${previewTotal}` : "-"}</strong>
+                  Available: <strong>{productId ? availableQty : "-"}</strong>
+                  {"  "} | Unit Price: <strong>{unitPrice ? `৳${unitPrice}` : "-"}</strong>
+                  {"  "} | Preview Total: <strong>{qtyValid ? `৳${previewTotal}` : "-"}</strong>
                 </div>
               </div>
             </form>
