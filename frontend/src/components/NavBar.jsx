@@ -7,7 +7,8 @@ export default function NavBar() {
   const role = localStorage.getItem("role") || "";
 
   const isRider = role === "DELIVERY_RIDER";
-  const isStaff = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"].includes(role);
+  const isBranchStaff = role === "BRANCH_STAFF";
+  const isAdminStaff = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"].includes(role);
   const isSuperAdmin = role === "SUPER_ADMIN";
 
   const logout = () => {
@@ -20,7 +21,8 @@ export default function NavBar() {
   const isActive = (path) =>
     location.pathname === path ? "nav-link active fw-semibold" : "nav-link";
 
-  const brandLink = isRider ? "/deliveries" : "/branches";
+  // Brand click target by role
+  const brandLink = isRider ? "/deliveries" : isBranchStaff ? "/orders" : "/branches";
 
   return (
     <header className="bg-light border-bottom">
@@ -43,13 +45,13 @@ export default function NavBar() {
       <div className="bg-white border-top">
         <div className="container py-2">
           <nav className="navbar-nav flex-row flex-wrap gap-2 justify-content-center">
-            {/* Public catalog link (everyone logged in can view) */}
+            {/* Catalog link (everyone can use) */}
             <Link className={isActive("/catalog")} to="/catalog">
               Catalog
             </Link>
 
-            {/* Staff */}
-            {isStaff ? (
+            {/* Admin Staff menu */}
+            {isAdminStaff ? (
               <>
                 <Link className={isActive("/branches")} to="/branches">
                   Branches
@@ -82,7 +84,6 @@ export default function NavBar() {
                   Reports
                 </Link>
 
-                {/* SUPER_ADMIN only */}
                 {isSuperAdmin ? (
                   <>
                     <Link
@@ -91,7 +92,6 @@ export default function NavBar() {
                     >
                       User Approvals
                     </Link>
-
                     <Link className={isActive("/admin/users")} to="/admin/users">
                       Users
                     </Link>
@@ -100,14 +100,26 @@ export default function NavBar() {
               </>
             ) : null}
 
-            {/* Rider */}
+            {/* Branch Staff menu (limited) */}
+            {isBranchStaff ? (
+              <>
+                <Link className={isActive("/branch-stock")} to="/branch-stock">
+                  Branch Stock
+                </Link>
+                <Link className={isActive("/orders")} to="/orders">
+                  Orders
+                </Link>
+              </>
+            ) : null}
+
+            {/* Rider menu */}
             {isRider ? (
               <Link className={isActive("/deliveries")} to="/deliveries">
                 Deliveries
               </Link>
             ) : null}
 
-            {/* Everyone (logged in) */}
+            {/* Everyone logged-in */}
             <Link className={isActive("/notifications")} to="/notifications">
               Notifications
             </Link>

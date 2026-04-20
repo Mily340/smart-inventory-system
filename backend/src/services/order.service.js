@@ -3,7 +3,8 @@ import ApiError from "../utils/ApiError.js";
 
 const ensurePositiveInt = (value, fieldName) => {
   const n = Number(value);
-  if (!Number.isInteger(n) || n <= 0) throw new ApiError(400, `${fieldName} must be a positive integer`);
+  if (!Number.isInteger(n) || n <= 0)
+    throw new ApiError(400, `${fieldName} must be a positive integer`);
   return n;
 };
 
@@ -43,10 +44,13 @@ export const listOrders = async ({ branchId }) => {
 export const createOrder = async ({ distributorId, branchId, items }, user) => {
   if (!distributorId) throw new ApiError(400, "distributorId is required");
   if (!branchId) throw new ApiError(400, "branchId is required");
-  if (!Array.isArray(items) || items.length === 0) throw new ApiError(400, "items is required");
+  if (!Array.isArray(items) || items.length === 0)
+    throw new ApiError(400, "items is required");
 
   return prisma.$transaction(async (tx) => {
-    const distributor = await tx.distributor.findUnique({ where: { id: distributorId } });
+    const distributor = await tx.distributor.findUnique({
+      where: { id: distributorId },
+    });
     if (!distributor) throw new ApiError(400, "Invalid distributorId");
 
     const branch = await tx.branch.findUnique({ where: { id: branchId } });
@@ -56,16 +60,23 @@ export const createOrder = async ({ distributorId, branchId, items }, user) => {
     const normalizedItems = [];
     for (let idx = 0; idx < items.length; idx++) {
       const it = items[idx];
-      if (!it?.productId) throw new ApiError(400, `items[${idx}].productId is required`);
+      if (!it?.productId)
+        throw new ApiError(400, `items[${idx}].productId is required`);
 
       const quantity = ensurePositiveInt(it.quantity, `items[${idx}].quantity`);
 
-      const product = await tx.product.findUnique({ where: { id: it.productId } });
-      if (!product) throw new ApiError(400, `Invalid productId in items[${idx}]`);
+      const product = await tx.product.findUnique({
+        where: { id: it.productId },
+      });
+      if (!product)
+        throw new ApiError(400, `Invalid productId in items[${idx}]`);
 
       const unitPrice = Number(product.price || 0);
       if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-        throw new ApiError(400, `Product price is missing/invalid for ${product.name}`);
+        throw new ApiError(
+          400,
+          `Product price is missing/invalid for ${product.name}`
+        );
       }
 
       // Stock validation at CREATE time
@@ -73,11 +84,21 @@ export const createOrder = async ({ distributorId, branchId, items }, user) => {
         where: { branchId_productId: { branchId, productId: it.productId } },
       });
 
-      if (!inv) throw new ApiError(400, `No stock record for ${product.name} in this branch`);
-      if (inv.quantity < quantity) throw new ApiError(400, `Insufficient stock for ${product.name}`);
+      if (!inv)
+        throw new ApiError(
+          400,
+          `No stock record for ${product.name} in this branch`
+        );
+      if (inv.quantity < quantity)
+        throw new ApiError(400, `Insufficient stock for ${product.name}`);
 
       const subtotal = Number((quantity * unitPrice).toFixed(2));
-      normalizedItems.push({ productId: it.productId, quantity, unitPrice, subtotal });
+      normalizedItems.push({
+        productId: it.productId,
+        quantity,
+        unitPrice,
+        subtotal,
+      });
     }
 
     const totalAmount = Number(
@@ -90,7 +111,9 @@ export const createOrder = async ({ distributorId, branchId, items }, user) => {
       orderBy: { createdAt: "desc" },
       select: { code: true },
     });
-    const lastNum = last?.code ? parseInt(String(last.code).replace("O", ""), 10) : 0;
+    const lastNum = last?.code
+      ? parseInt(String(last.code).replace("O", ""), 10)
+      : 0;
     const code = nextCode("O", Number.isNaN(lastNum) ? 0 : lastNum);
 
     const created = await tx.order.create({
@@ -143,6 +166,17 @@ export const updateOrderStatus = async (id, { status }, user) => {
 
     if (!order) throw new ApiError(404, "Order not found");
 
+    // ✅ BRANCH_STAFF restriction:
+    // Only allow CANCELLED, and only when current status is PENDING
+    if (user?.role === "BRANCH_STAFF") {
+      if (status !== "CANCELLED") {
+        throw new ApiError(403, "BRANCH_STAFF can only cancel orders");
+      }
+      if (order.status !== "PENDING") {
+        throw new ApiError(400, "Only PENDING orders can be cancelled");
+      }
+    }
+
     const current = order.status;
     const allowed = allowedTransitions[current] || [];
     if (!allowed.includes(status)) {
@@ -153,7 +187,12 @@ export const updateOrderStatus = async (id, { status }, user) => {
     if (status === "APPROVED") {
       for (const item of order.items) {
         const inv = await tx.inventory.findUnique({
-          where: { branchId_productId: { branchId: order.branchId, productId: item.productId } },
+          where: {
+            branchId_productId: {
+              branchId: order.branchId,
+              productId: item.productId,
+            },
+          },
         });
         if (!inv || inv.quantity < item.quantity) {
           throw new ApiError(400, "Insufficient stock to approve this order");
@@ -162,7 +201,12 @@ export const updateOrderStatus = async (id, { status }, user) => {
 
       for (const item of order.items) {
         await tx.inventory.update({
-          where: { branchId_productId: { branchId: order.branchId, productId: item.productId } },
+          where: {
+            branchId_productId: {
+              branchId: order.branchId,
+              productId: item.productId,
+            },
+          },
           data: { quantity: { decrement: item.quantity } },
         });
 

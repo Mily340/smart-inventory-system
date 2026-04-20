@@ -17,17 +17,14 @@ export default function Transfers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const role = localStorage.getItem("role") || "";
+  const isBranchStaff = role === "BRANCH_STAFF";
+  const isAdminStaff = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"].includes(role);
+
   const getBranchLabel = (id) => {
     const b = branches.find((x) => x.id === id);
     if (!b) return "-";
     return `${b.code ? b.code + " - " : ""}${b.name}`;
-  };
-
-  // (Keeping this in case you use it later, but not required)
-  const getProductLabel = (id) => {
-    const p = products.find((x) => x.id === id);
-    if (!p) return "-";
-    return `${p.code ? p.code + " - " : ""}${p.name}`;
   };
 
   const fetchAll = async () => {
@@ -56,6 +53,8 @@ export default function Transfers() {
       setError(msg);
       if (msg.toLowerCase().includes("unauthorized")) {
         localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("fullName");
         navigate("/login");
       }
     } finally {
@@ -101,6 +100,10 @@ export default function Transfers() {
   };
 
   const renderActions = (t) => {
+    // BRANCH_STAFF: view only
+    if (isBranchStaff) return <span className="text-muted">—</span>;
+
+    // Admin/Manager/Inventory actions
     if (t.status === "PENDING") {
       return (
         <div className="d-flex gap-2 flex-wrap">
@@ -149,86 +152,93 @@ export default function Transfers() {
     <>
       <NavBar />
       <div className="container" style={{ marginTop: 40 }}>
-        <h4 className="mb-3">Transfers</h4>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="m-0">Transfers</h4>
+          <span className="text-muted small">
+            Role: <strong>{role || "-"}</strong>
+          </span>
+        </div>
 
         {error ? <div className="alert alert-danger">{error}</div> : null}
 
-        <div className="card mb-4">
-          <div className="card-body">
-            <h6 className="card-title mb-2">Create Transfer (1 item)</h6>
+        {/* Create transfer: allow Admin Staff + Branch Staff */}
+        {(isAdminStaff || isBranchStaff) ? (
+          <div className="card mb-4">
+            <div className="card-body">
+              <h6 className="card-title mb-2">Create Transfer (1 item)</h6>
 
-            <div className="small text-muted mb-3">
-              <strong>Request From:</strong> {getBranchLabel(fromBranchId)}{" "}
-              <strong className="mx-2">→</strong>
-              <strong>Request To:</strong> {getBranchLabel(toBranchId)}
+              <div className="small text-muted mb-3">
+                <strong>Request From:</strong> {getBranchLabel(fromBranchId)}{" "}
+                <strong className="mx-2">→</strong>
+                <strong>Request To:</strong> {getBranchLabel(toBranchId)}
+              </div>
+
+              <form onSubmit={createTransfer} className="row g-2">
+                <div className="col-md-3">
+                  <select
+                    className="form-select"
+                    value={fromBranchId}
+                    onChange={(e) => setFromBranchId(e.target.value)}
+                    required
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code ? `${b.code} - ` : ""}
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-3">
+                  <select
+                    className="form-select"
+                    value={toBranchId}
+                    onChange={(e) => setToBranchId(e.target.value)}
+                    required
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code ? `${b.code} - ` : ""}
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-3">
+                  <select
+                    className="form-select"
+                    value={productId}
+                    onChange={(e) => setProductId(e.target.value)}
+                    required
+                  >
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code ? `${p.code} - ` : ""}
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-1">
+                  <input
+                    className="form-control"
+                    placeholder="Qty"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="col-md-2 d-flex align-items-end">
+                  <button className="btn btn-primary w-100">Create</button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={createTransfer} className="row g-2">
-              <div className="col-md-3">
-                <select
-                  className="form-select"
-                  value={fromBranchId}
-                  onChange={(e) => setFromBranchId(e.target.value)}
-                  required
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.code ? `${b.code} - ` : ""}
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-md-3">
-                <select
-                  className="form-select"
-                  value={toBranchId}
-                  onChange={(e) => setToBranchId(e.target.value)}
-                  required
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.code ? `${b.code} - ` : ""}
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-md-3">
-                <select
-                  className="form-select"
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                  required
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code ? `${p.code} - ` : ""}
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-md-1">
-                <input
-                  className="form-control"
-                  placeholder="Qty"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="col-md-2 d-flex align-items-end">
-                <button className="btn btn-primary w-100">Create</button>
-              </div>
-
-            </form>
           </div>
-        </div>
+        ) : null}
 
         {loading ? (
           <div>Loading...</div>

@@ -9,7 +9,14 @@ import {
 const router = Router();
 router.use(protect);
 
-router.get("/", getDistributors);
+// view (staff + branch staff)
+router.get(
+  "/",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  getDistributors
+);
+
+// create (staff only)
 router.post(
   "/",
   allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"),

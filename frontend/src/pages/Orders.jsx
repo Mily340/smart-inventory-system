@@ -22,6 +22,10 @@ export default function Orders() {
   const [loadingStock, setLoadingStock] = useState(false);
   const [error, setError] = useState("");
 
+  const role = localStorage.getItem("role") || "";
+  const isBranchStaff = role === "BRANCH_STAFF";
+  const isAdminStaff = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"].includes(role);
+
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
       localStorage.removeItem("token");
@@ -41,11 +45,9 @@ export default function Orders() {
       const res = await client.get(`/inventory?branchId=${bId}`);
       const data = res.data?.data || [];
 
-      // Sort by product name for nicer dropdown
       data.sort((a, b) => (a.product?.name || "").localeCompare(b.product?.name || ""));
       setStockItems(data);
 
-      // If current selected product is not in this branch, reset to first available
       const exists = data.some((it) => it.productId === productId);
       if (!exists) {
         const first = data[0];
@@ -87,7 +89,6 @@ export default function Orders() {
       if (!distributorId && nextDistributorId) setDistributorId(nextDistributorId);
       if (!branchId && nextBranchId) setBranchId(nextBranchId);
 
-      // load stock for initial/default branch
       if (nextBranchId) {
         await fetchStockForBranch(nextBranchId);
       }
@@ -105,11 +106,9 @@ export default function Orders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When branch changes, reload stock
   useEffect(() => {
     if (!branchId) return;
     fetchStockForBranch(branchId);
-    // also reset qty when branch changes
     setQuantity("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
@@ -187,6 +186,22 @@ export default function Orders() {
   };
 
   const renderStatusButtons = (o) => {
+    // BRANCH_STAFF: only Cancel a PENDING order
+    if (isBranchStaff) {
+      if (o.status === "PENDING") {
+        return (
+          <button
+            className="btn btn-sm btn-outline-danger"
+            onClick={() => updateStatus(o.id, "CANCELLED")}
+          >
+            Cancel
+          </button>
+        );
+      }
+      return <span className="text-muted">—</span>;
+    }
+
+    // Admin/Manager/Inventory: full workflow
     if (o.status === "PENDING") {
       return (
         <div className="d-flex gap-2 flex-wrap">
@@ -247,7 +262,12 @@ export default function Orders() {
       <NavBar />
 
       <div className="container" style={{ marginTop: 40 }}>
-        <h4 className="mb-3">Orders</h4>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="m-0">Orders</h4>
+          <span className="text-muted small">
+            Role: <strong>{role || "-"}</strong>
+          </span>
+        </div>
 
         {error ? <div className="alert alert-danger">{error}</div> : null}
 
@@ -300,7 +320,11 @@ export default function Orders() {
                   disabled={loadingStock}
                 >
                   {stockItems.map((it) => (
-                    <option key={it.productId} value={it.productId} disabled={(it.quantity ?? 0) <= 0}>
+                    <option
+                      key={it.productId}
+                      value={it.productId}
+                      disabled={(it.quantity ?? 0) <= 0}
+                    >
                       {it.product?.code ? `${it.product.code} - ` : ""}
                       {it.product?.name}
                       {typeof it.product?.price === "number" ? ` (৳${it.product.price})` : ""}
@@ -327,9 +351,7 @@ export default function Orders() {
                   disabled={!productId || availableQty <= 0 || loadingStock}
                 />
                 {quantity && !qtyValid ? (
-                  <div className="invalid-feedback">
-                    Max {availableQty}
-                  </div>
+                  <div className="invalid-feedback">Max {availableQty}</div>
                 ) : null}
               </div>
 

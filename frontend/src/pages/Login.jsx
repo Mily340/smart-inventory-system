@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import client from "../api/client";
 
 export default function Login() {
@@ -12,7 +12,8 @@ export default function Login() {
 
   const redirectByRole = (role) => {
     if (role === "DELIVERY_RIDER") return "/deliveries";
-    return "/branches";
+    if (role === "BRANCH_STAFF") return "/orders"; // or "/branch-stock"
+    return "/branches"; // admin/manager/inventory
   };
 
   const onSubmit = async (e) => {
@@ -42,7 +43,12 @@ export default function Login() {
 
   return (
     <div className="container" style={{ maxWidth: 420, marginTop: 80 }}>
-      <h4 className="mb-3">Login</h4>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <h4 className="m-0">Login</h4>
+        <Link className="btn btn-outline-secondary btn-sm" to="/catalog">
+          Catalog
+        </Link>
+      </div>
 
       {error ? <div className="alert alert-danger">{error}</div> : null}
 
@@ -81,7 +87,7 @@ export default function Login() {
               onMouseUp={() => setShowPassword(false)}
               onTouchStart={() => setShowPassword(true)}
               onTouchEnd={() => setShowPassword(false)}
-              aria-label="Hover/hold to show password"
+              aria-label="Hold to show password"
               title="Hold to show password"
             >
               <i className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"} />
@@ -93,16 +99,9 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <div className="text-center mt-3">
-          <span className="text-muted">New user?</span>{" "}
-          <button
-            type="button"
-            className="btn btn-link p-0"
-            onClick={() => navigate("/register")}
-          >
-            Submit a registration request
-          </button>
-        </div>
+        <Link className="btn btn-outline-secondary w-100 mt-2" to="/register">
+          Register Request
+        </Link>
       </form>
     </div>
   );

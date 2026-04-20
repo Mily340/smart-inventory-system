@@ -10,11 +10,14 @@ import {
 } from "../controllers/inventory.controller.js";
 
 const router = Router();
-
 router.use(protect);
 
-// View inventory (all logged-in users)
-router.get("/", getInventory);
+// View inventory (staff + branch staff)
+router.get(
+  "/",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  getInventory
+);
 
 // Stock operations (warehouse/admin/inventory roles)
 router.post(

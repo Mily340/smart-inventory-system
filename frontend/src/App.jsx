@@ -21,8 +21,12 @@ import Notifications from "./pages/Notifications";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const STAFF_ROLES = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"];
-const DELIVERY_ROLES = ["DELIVERY_RIDER", ...STAFF_ROLES];
+// Role groups
+const ADMIN_STAFF = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"];
+const BRANCH_STAFF = ["BRANCH_STAFF"];
+const RIDER = ["DELIVERY_RIDER"];
+
+const ALL_LOGGED_IN = [...ADMIN_STAFF, ...BRANCH_STAFF, ...RIDER];
 const ADMIN_ONLY = ["SUPER_ADMIN"];
 
 export default function App() {
@@ -35,99 +39,95 @@ export default function App() {
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/catalog/:id" element={<CatalogProduct />} />
 
-        {/* Staff */}
+        {/* Admin Staff only */}
         <Route
           path="/branches"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Branches />
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/categories"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Categories />
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/products"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Products />
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/inventory"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Inventory />
             </ProtectedRoute>
           }
         />
-
-        <Route
-          path="/branch-stock"
-          element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
-              <BranchStock />
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="/transfers"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Transfers />
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/distributors"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Distributors />
             </ProtectedRoute>
           }
         />
-
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Deliveries: Rider + Staff */}
-        <Route
-          path="/deliveries"
-          element={
-            <ProtectedRoute allowedRoles={DELIVERY_ROLES}>
-              <Deliveries />
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="/reports"
           element={
-            <ProtectedRoute allowedRoles={STAFF_ROLES}>
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
               <Reports />
             </ProtectedRoute>
           }
         />
 
-        {/* Admin-only approvals page */}
+        {/* Orders: Admin Staff + Branch Staff */}
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute allowedRoles={[...ADMIN_STAFF, ...BRANCH_STAFF]}>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Branch Stock: Admin Staff + Branch Staff */}
+        <Route
+          path="/branch-stock"
+          element={
+            <ProtectedRoute allowedRoles={[...ADMIN_STAFF, ...BRANCH_STAFF]}>
+              <BranchStock />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Deliveries: Rider + Admin Staff (NOT Branch Staff) */}
+        <Route
+          path="/deliveries"
+          element={
+            <ProtectedRoute allowedRoles={[...RIDER, ...ADMIN_STAFF]}>
+              <Deliveries />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin-only pages */}
         <Route
           path="/admin/registration-requests"
           element={
@@ -136,8 +136,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Admin-only user management */}
         <Route
           path="/admin/users"
           element={
@@ -151,7 +149,7 @@ export default function App() {
         <Route
           path="/notifications"
           element={
-            <ProtectedRoute allowedRoles={DELIVERY_ROLES}>
+            <ProtectedRoute allowedRoles={ALL_LOGGED_IN}>
               <Notifications />
             </ProtectedRoute>
           }

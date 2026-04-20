@@ -25,14 +25,26 @@ export default function CatalogProduct() {
   }, [id]);
 
   return (
-    <div className="container" style={{ marginTop: 40, maxWidth: 800 }}>
+    <div className="container" style={{ marginTop: 28, maxWidth: 850 }}>
+      {/* Public Header */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <Link to="/catalog" className="btn btn-outline-secondary btn-sm">
-          Back to Catalog
+        <Link to="/catalog" className="text-decoration-none">
+          <div style={{ fontWeight: 800, color: "#7600bc", fontSize: 22 }}>
+            SMART INVENTORY
+          </div>
+          <div className="text-muted" style={{ fontSize: 12 }}>
+            Public Product Details
+          </div>
         </Link>
-        <Link to="/login" className="btn btn-outline-secondary btn-sm">
-          Staff Login
-        </Link>
+
+        <div className="d-flex gap-2">
+          <Link to="/catalog" className="btn btn-outline-secondary btn-sm">
+            Back
+          </Link>
+          <Link to="/login" className="btn btn-outline-secondary btn-sm">
+            Staff Login
+          </Link>
+        </div>
       </div>
 
       {loading ? <div>Loading...</div> : null}
@@ -51,10 +63,10 @@ export default function CatalogProduct() {
 
             <hr />
 
-            <div className="row">
+            <div className="row g-2">
               <div className="col-md-6">
                 <div className="fw-semibold">Price</div>
-                <div>{p.price}</div>
+                <div>৳{p.price}</div>
               </div>
 
               <div className="col-md-6">
@@ -67,6 +79,12 @@ export default function CatalogProduct() {
 
             <div className="fw-semibold mb-1">Description</div>
             <div className="text-muted">{p.description || "No description available."}</div>
+
+            <hr />
+
+            <div className="small text-muted">
+              For orders/contact: Please login as staff or contact the nearest branch.
+            </div>
           </div>
         </div>
       ) : null}

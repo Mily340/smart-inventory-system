@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import NavBar from "../components/NavBar";
 
+const FALLBACK_IMG = "https://via.placeholder.com/400x260?text=Product";
+
 export default function Products() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -15,6 +17,7 @@ export default function Products() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("pcs");
   const [price, setPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
 
@@ -25,6 +28,7 @@ export default function Products() {
   const [editName, setEditName] = useState("");
   const [editUnit, setEditUnit] = useState("");
   const [editPrice, setEditPrice] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editCategoryId, setEditCategoryId] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
@@ -39,7 +43,10 @@ export default function Products() {
     setError("");
     setLoading(true);
     try {
-      const [pRes, cRes] = await Promise.all([client.get("/products"), client.get("/categories")]);
+      const [pRes, cRes] = await Promise.all([
+        client.get("/products"),
+        client.get("/categories"),
+      ]);
 
       const prods = pRes.data?.data || [];
       const cats = cRes.data?.data || [];
@@ -70,12 +77,14 @@ export default function Products() {
   const createProduct = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
       await client.post("/products", {
         sku,
         name,
         unit,
         price: Number(price),
+        imageUrl: imageUrl?.trim() ? imageUrl.trim() : null,
         description: description || null,
         categoryId,
       });
@@ -84,6 +93,7 @@ export default function Products() {
       setName("");
       setUnit("pcs");
       setPrice("");
+      setImageUrl("");
       setDescription("");
       fetchAll();
     } catch (err) {
@@ -98,6 +108,7 @@ export default function Products() {
     setEditName(p.name || "");
     setEditUnit(p.unit || "");
     setEditPrice(p.price ?? "");
+    setEditImageUrl(p.imageUrl || "");
     setEditDescription(p.description || "");
     setEditCategoryId(p.categoryId || p.category?.id || (categories[0]?.id || ""));
     setEditOpen(true);
@@ -120,6 +131,7 @@ export default function Products() {
         name: editName,
         unit: editUnit,
         price: Number(editPrice),
+        imageUrl: editImageUrl?.trim() ? editImageUrl.trim() : null,
         description: editDescription || null,
         categoryId: editCategoryId,
       });
@@ -212,6 +224,18 @@ export default function Products() {
               <div className="col-12">
                 <input
                   className="form-control"
+                  placeholder="Image URL (optional) - https://..."
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                />
+                <div className="form-text">
+                  Tip: Use a direct image link (ends with .jpg/.png/.webp) or any https image URL.
+                </div>
+              </div>
+
+              <div className="col-12">
+                <input
+                  className="form-control"
                   placeholder="Description (optional)"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -229,6 +253,7 @@ export default function Products() {
             <table className="table table-bordered align-middle">
               <thead>
                 <tr>
+                  <th style={{ width: 90 }}>Image</th>
                   <th>Code</th>
                   <th>SKU</th>
                   <th>Name</th>
@@ -242,6 +267,27 @@ export default function Products() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
+                    <td>
+                      <img
+                        src={p.imageUrl || FALLBACK_IMG}
+                        alt={p.name}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width: 70,
+                          height: 50,
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: "1px solid #eee",
+                          background: "#f2f2f2",
+                        }}
+                        onError={(e) => {
+                          if (e.currentTarget.src !== FALLBACK_IMG) {
+                            e.currentTarget.src = FALLBACK_IMG;
+                          }
+                        }}
+                      />
+                    </td>
                     <td>{p.code || "-"}</td>
                     <td>{p.sku}</td>
                     <td>{p.name}</td>
@@ -250,10 +296,7 @@ export default function Products() {
                     <td>{p.price ?? "-"}</td>
                     <td>{p.description || "-"}</td>
                     <td>
-                      <button
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={() => openEdit(p)}
-                      >
+                      <button className="btn btn-sm btn-outline-primary" onClick={() => openEdit(p)}>
                         Edit
                       </button>
                     </td>
@@ -262,7 +305,7 @@ export default function Products() {
 
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="text-center">
+                    <td colSpan="9" className="text-center">
                       No products found
                     </td>
                   </tr>
@@ -273,7 +316,7 @@ export default function Products() {
         )}
       </div>
 
-      {/* Edit Modal (Bootstrap style without JS dependency) */}
+      {/* Edit Modal */}
       {editOpen ? (
         <>
           <div className="modal show" style={{ display: "block" }} tabIndex="-1">
@@ -345,6 +388,37 @@ export default function Products() {
                       </div>
 
                       <div className="col-12">
+                        <label className="form-label">Image URL (optional)</label>
+                        <input
+                          className="form-control"
+                          value={editImageUrl}
+                          onChange={(e) => setEditImageUrl(e.target.value)}
+                          placeholder="https://..."
+                        />
+                        <div className="mt-2">
+                          <img
+                            src={editImageUrl?.trim() ? editImageUrl.trim() : FALLBACK_IMG}
+                            alt="Preview"
+                            loading="lazy"
+                            decoding="async"
+                            style={{
+                              width: "100%",
+                              maxHeight: 220,
+                              objectFit: "cover",
+                              borderRadius: 10,
+                              border: "1px solid #eee",
+                              background: "#f2f2f2",
+                            }}
+                            onError={(e) => {
+                              if (e.currentTarget.src !== FALLBACK_IMG) {
+                                e.currentTarget.src = FALLBACK_IMG;
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="col-12">
                         <label className="form-label">Description</label>
                         <input
                           className="form-control"
@@ -369,7 +443,6 @@ export default function Products() {
             </div>
           </div>
 
-          {/* Backdrop */}
           <div className="modal-backdrop fade show" onClick={closeEdit} />
         </>
       ) : null}

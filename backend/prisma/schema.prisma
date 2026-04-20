@@ -12,6 +12,7 @@ enum Role {
   BRANCH_MANAGER
   INVENTORY_OFFICER
   DELIVERY_RIDER
+  BRANCH_STAFF
 }
 
 enum StockTransactionType {
@@ -57,15 +58,15 @@ enum DeliveryStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  code      String?  @unique // U001, U002...
-  fullName  String   @map("full_name")
-  email     String   @unique
-  password  String
-  role      Role
-  branchId  String?  @map("branch_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String             @id @default(uuid())
+  code               String?            @unique // U001, U002...
+  fullName           String             @map("full_name")
+  email              String             @unique
+  password           String
+  role               Role
+  branchId           String?            @map("branch_id")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
 
   branch             Branch?            @relation(fields: [branchId], references: [id])
   stockTransactions  StockTransaction[]
@@ -79,22 +80,22 @@ model User {
 }
 
 model Branch {
-  id        String   @id @default(uuid())
-  code      String?  @unique // B001, B002...
-  name      String
-  address   String
-  latitude  Float
-  longitude Float
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                   String             @id @default(uuid())
+  code                 String?            @unique // B001, B002...
+  name                 String
+  address              String
+  latitude             Float
+  longitude            Float
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  users             User[]
-  inventoryItems    Inventory[]
-  stockTransactions StockTransaction[]
-  outgoingTransfers TransferRequest[]  @relation("FromBranch")
-  incomingTransfers TransferRequest[]  @relation("ToBranch")
-  orders            Order[]
-  notifications     Notification[]
+  users                User[]
+  inventoryItems       Inventory[]
+  stockTransactions    StockTransaction[]
+  outgoingTransfers    TransferRequest[]  @relation("FromBranch")
+  incomingTransfers    TransferRequest[]  @relation("ToBranch")
+  orders               Order[]
+  notifications        Notification[]
 
   registrationRequests RegistrationRequest[] // ✅ added (fix)
 
@@ -124,6 +125,7 @@ model Product {
   categoryId  String   @map("category_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  imageUrl    String?  @map("image_url")
 
   category          Category           @relation(fields: [categoryId], references: [id])
   inventoryItems    Inventory[]

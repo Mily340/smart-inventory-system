@@ -1,4 +1,5 @@
 import { Router } from "express";
+import prisma from "../db/prisma.js";
 import {
   getBranches,
   createBranchController,
@@ -16,31 +17,12 @@ const router = Router();
  */
 router.get("/public", async (_req, res, next) => {
   try {
-    // reuse existing handler output then reduce fields
-    // we call the service through getBranches by mimicking req/res is messy,
-    // so simplest is to just fetch directly here using controller logic.
-    // If your getBranches already returns all branches, this keeps it safe.
-    // (Assumes Prisma is used in controller/service.)
-    // We'll just call getBranches and then map the response.
-    let capturedJson;
-    const fakeRes = {
-      json: (payload) => {
-        capturedJson = payload;
-        return payload;
-      },
-      status: () => fakeRes,
-    };
+    const list = await prisma.branch.findMany({
+      orderBy: { createdAt: "desc" },
+      select: { id: true, code: true, name: true },
+    });
 
-    await getBranches(_req, fakeRes, next);
-
-    const list = capturedJson?.data || [];
-    const minimal = list.map((b) => ({
-      id: b.id,
-      code: b.code || null,
-      name: b.name,
-    }));
-
-    return res.json({ success: true, message: "Branches fetched", data: minimal });
+    return res.json({ success: true, message: "Branches fetched", data: list });
   } catch (e) {
     next(e);
   }
@@ -49,7 +31,14 @@ router.get("/public", async (_req, res, next) => {
 // Protected routes (everything below requires login)
 router.use(protect);
 
-router.get("/", getBranches);
+// view (staff + branch staff)
+router.get(
+  "/",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  getBranches
+);
+
+// modify (super admin only)
 router.post("/", allowRoles("SUPER_ADMIN"), createBranchController);
 router.put("/:id", allowRoles("SUPER_ADMIN"), updateBranchController);
 router.delete("/:id", allowRoles("SUPER_ADMIN"), deleteBranchController);

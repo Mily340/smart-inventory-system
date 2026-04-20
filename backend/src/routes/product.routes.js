@@ -9,10 +9,16 @@ import {
 } from "../controllers/product.controller.js";
 
 const router = Router();
-
 router.use(protect);
 
-router.get("/", getProducts);
+// view (staff + branch staff)
+router.get(
+  "/",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  getProducts
+);
+
+// modify (admin + inventory only)
 router.post("/", allowRoles("SUPER_ADMIN", "INVENTORY_OFFICER"), createProductController);
 router.put("/:id", allowRoles("SUPER_ADMIN", "INVENTORY_OFFICER"), updateProductController);
 router.delete("/:id", allowRoles("SUPER_ADMIN", "INVENTORY_OFFICER"), deleteProductController);

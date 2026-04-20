@@ -10,12 +10,27 @@ import {
 const router = Router();
 router.use(protect);
 
-router.get("/", getOrders);
+// view orders (staff + branch staff)
+router.get(
+  "/",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  getOrders
+);
 
-// create order (admin / inventory / branch manager)
-router.post("/", allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"), createOrderController);
+// create order (staff + branch staff)
+router.post(
+  "/",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  createOrderController
+);
 
-// update order status (admin / branch manager)
-router.patch("/:id/status", allowRoles("SUPER_ADMIN", "BRANCH_MANAGER"), updateOrderStatusController);
+// update order status
+// ✅ allow BRANCH_STAFF here, BUT you must restrict in controller/service:
+// - BRANCH_STAFF can only set status = "CANCELLED" (and only when current status is PENDING)
+router.patch(
+  "/:id/status",
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  updateOrderStatusController
+);
 
 export default router;

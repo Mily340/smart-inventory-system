@@ -39,6 +39,7 @@ export const publicProducts = async (req, res, next) => {
         description: true,
         unit: true,
         price: true,
+        imageUrl: true, // ✅ add this
         categoryId: true,
         category: { select: { id: true, code: true, name: true } },
       },
@@ -64,6 +65,7 @@ export const publicProductById = async (req, res, next) => {
         description: true,
         unit: true,
         price: true,
+        imageUrl: true, // ✅ add this
         categoryId: true,
         category: { select: { id: true, code: true, name: true } },
         createdAt: true,
