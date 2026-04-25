@@ -80,24 +80,22 @@ model User {
 }
 
 model Branch {
-  id                   String             @id @default(uuid())
-  code                 String?            @unique // B001, B002...
-  name                 String
-  address              String
-  latitude             Float
-  longitude            Float
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
+  id                String             @id @default(uuid())
+  code              String?            @unique // B001, B002...
+  name              String
+  address           String
+  latitude          Float
+  longitude         Float
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 
-  users                User[]
-  inventoryItems       Inventory[]
-  stockTransactions    StockTransaction[]
-  outgoingTransfers    TransferRequest[]  @relation("FromBranch")
-  incomingTransfers    TransferRequest[]  @relation("ToBranch")
-  orders               Order[]
-  notifications        Notification[]
-
-  registrationRequests RegistrationRequest[] // ✅ added (fix)
+  users             User[]
+  inventoryItems    Inventory[]
+  stockTransactions StockTransaction[]
+  outgoingTransfers TransferRequest[]   @relation("FromBranch")
+  incomingTransfers TransferRequest[]   @relation("ToBranch")
+  orders            Order[]
+  notifications     Notification[]
 
   @@map("branches")
 }
@@ -330,23 +328,4 @@ model Notification {
   @@index([branchId])
   @@index([isRead])
   @@map("notifications")
-}
-
-model RegistrationRequest {
-  id       String  @id @default(uuid())
-  fullName String  @map("full_name")
-  email    String  @unique
-  password String
-  role     Role
-  branchId String? @map("branch_id")
-
-  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
-  reviewedBy String?   @map("reviewed_by")
-  reviewedAt DateTime? @map("reviewed_at")
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  branch Branch? @relation(fields: [branchId], references: [id])
-
-  @@map("registration_requests")
 }

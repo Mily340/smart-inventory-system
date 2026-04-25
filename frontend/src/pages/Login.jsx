@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import client from "../api/client";
+import NavBar from "../components/NavBar";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,10 +12,11 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const redirectByRole = (role) => {
-    if (role === "DELIVERY_RIDER") return "/deliveries";
-    if (role === "BRANCH_STAFF") return "/orders"; // or "/branch-stock"
-    return "/branches"; // admin/manager/inventory
-  };
+  if (role === "SUPER_ADMIN") return "/dashboard";
+  if (role === "DELIVERY_RIDER") return "/deliveries";
+  if (role === "BRANCH_STAFF") return "/orders";
+  return "/branches"; // BRANCH_MANAGER / INVENTORY_OFFICER
+};
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +25,6 @@ export default function Login() {
 
     try {
       const res = await client.post("/auth/login", { email, password });
-
       const token = res.data?.data?.token;
       const user = res.data?.data?.user;
 
@@ -43,11 +44,15 @@ export default function Login() {
 
   return (
     <div className="container" style={{ maxWidth: 420, marginTop: 80 }}>
-      <div className="d-flex justify-content-between align-items-center mb-2">
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="m-0">Login</h4>
-        <Link className="btn btn-outline-secondary btn-sm" to="/catalog">
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          onClick={() => navigate("/catalog")}
+        >
           Catalog
-        </Link>
+        </button>
       </div>
 
       {error ? <div className="alert alert-danger">{error}</div> : null}
@@ -99,9 +104,7 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <Link className="btn btn-outline-secondary w-100 mt-2" to="/register">
-          Register Request
-        </Link>
+        {/* Registration removed (no Register Request button) */}
       </form>
     </div>
   );

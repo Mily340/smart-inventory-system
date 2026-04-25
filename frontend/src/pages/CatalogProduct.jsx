@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import client from "../api/client";
+import NavBar from "../components/NavBar";
 
 export default function CatalogProduct() {
   const { id } = useParams();

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
-import NavBar from "../components/NavBar";
 import html2canvas from "html2canvas";
+import NavBar from "../components/NavBar";
 import {
   ResponsiveContainer,
   BarChart,

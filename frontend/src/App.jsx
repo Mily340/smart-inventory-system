@@ -1,11 +1,13 @@
+// frontend/src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 import Login from "./pages/Login";
-import RegisterRequest from "./pages/RegisterRequest";
-import RegistrationRequests from "./pages/RegistrationRequests";
 import Users from "./pages/Users";
 
 import Catalog from "./pages/Catalog";
 import CatalogProduct from "./pages/CatalogProduct";
+
+import Dashboard from "./pages/Dashboard";
 
 import Branches from "./pages/Branches";
 import Categories from "./pages/Categories";
@@ -35,9 +37,18 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<RegisterRequest />} />
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/catalog/:id" element={<CatalogProduct />} />
+
+        {/* Dashboard (Admin Staff) */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin Staff only */}
         <Route
@@ -117,7 +128,7 @@ export default function App() {
           }
         />
 
-        {/* Deliveries: Rider + Admin Staff (NOT Branch Staff) */}
+        {/* Deliveries: Rider + Admin Staff */}
         <Route
           path="/deliveries"
           element={
@@ -128,14 +139,6 @@ export default function App() {
         />
 
         {/* Admin-only pages */}
-        <Route
-          path="/admin/registration-requests"
-          element={
-            <ProtectedRoute allowedRoles={ADMIN_ONLY}>
-              <RegistrationRequests />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/admin/users"
           element={

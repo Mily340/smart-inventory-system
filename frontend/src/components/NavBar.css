@@ -1,0 +1,138 @@
+/* When dashboard shell is active, push page content away from sidebar + topbar */
+body.si-layout {
+  background: #f7f8fb;
+  padding-left: 260px; /* sidebar width + gap */
+  padding-top: 64px;   /* topbar height */
+}
+
+/* Top bar */
+.si-topbar {
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e9eaf2;
+  z-index: 1100;
+}
+
+.si-topbar-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 18px;
+}
+
+.si-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.si-role-pill {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f2f7ff;      /* pastel blue */
+  border: 1px solid #d9e7ff;
+  color: #264b87;
+}
+
+/* Sidebar */
+.si-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  padding: 18px 14px;
+  background: linear-gradient(180deg, #f6fbff 0%, #f7f4ff 60%, #fff7fb 100%);
+  border-right: 1px solid #e9eaf2;
+  z-index: 1200;
+  overflow-y: auto;
+}
+
+.si-brand {
+  display: block;
+  text-decoration: none;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #ececf5;
+}
+
+.si-brand-title {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #7600bc;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.si-brand-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6a6f7d;
+}
+
+.si-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.si-nav-section {
+  margin-top: 10px;
+  margin-bottom: 4px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #7a8090;
+}
+
+/* Links (pastel pills) */
+.si-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: #1f2a44;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid #ececf5;
+  transition: all 0.15s ease;
+  font-weight: 600;
+}
+
+.si-link:hover {
+  transform: translateY(-1px);
+  background: rgba(245, 250, 255, 0.9);
+  border-color: #dfe7f7;
+}
+
+/* Pastel active state (NOT purple) */
+.si-link.active {
+  background: #dff3ff;        /* pastel sky */
+  border-color: #bfe9ff;
+  color: #103a66;
+  box-shadow: 0 6px 16px rgba(16, 58, 102, 0.08);
+}
+
+/* muted link */
+.si-link-muted {
+  background: transparent;
+  border-color: transparent;
+  color: #6a6f7d;
+  font-weight: 600;
+}
+
+.si-link-muted:hover {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: #ececf5;
+  color: #1f2a44;
+}

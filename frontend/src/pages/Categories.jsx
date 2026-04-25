@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import NavBar from "../components/NavBar";
@@ -18,6 +18,13 @@ export default function Categories() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [editId, setEditId] = useState("");
   const [editName, setEditName] = useState("");
+  const [editOriginalName, setEditOriginalName] = useState("");
+
+  const canSaveEdit = useMemo(() => {
+    const n = (editName || "").trim();
+    const o = (editOriginalName || "").trim();
+    return n.length > 0 && n !== o && !savingEdit;
+  }, [editName, editOriginalName, savingEdit]);
 
   const fetchCategories = async () => {
     setError("");
@@ -60,6 +67,7 @@ export default function Categories() {
     setError("");
     setEditId(c.id);
     setEditName(c.name || "");
+    setEditOriginalName(c.name || "");
     setEditOpen(true);
   };
 
@@ -68,20 +76,20 @@ export default function Categories() {
     setEditOpen(false);
     setEditId("");
     setEditName("");
+    setEditOriginalName("");
   };
 
   const saveEdit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!canSaveEdit) return;
+
     setSavingEdit(true);
-
     try {
-      // If your backend uses PATCH instead of PUT, change put -> patch
-      await client.put(`/categories/${editId}`, { name: editName });
+      // Backend route is PUT /categories/:id
+      await client.put(`/categories/${editId}`, { name: editName.trim() });
 
-      setEditOpen(false);
-      setEditId("");
-      setEditName("");
+      closeEdit();
       fetchCategories();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update category");
@@ -183,7 +191,11 @@ export default function Categories() {
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       required
+                      autoFocus
                     />
+                    <div className="form-text">
+                      Change the name and click Save. Code will remain unchanged.
+                    </div>
                   </div>
 
                   <div className="modal-footer">
@@ -191,10 +203,11 @@ export default function Categories() {
                       type="button"
                       className="btn btn-outline-secondary"
                       onClick={closeEdit}
+                      disabled={savingEdit}
                     >
                       Cancel
                     </button>
-                    <button className="btn btn-primary" disabled={savingEdit}>
+                    <button className="btn btn-primary" disabled={!canSaveEdit}>
                       {savingEdit ? "Saving..." : "Save"}
                     </button>
                   </div>

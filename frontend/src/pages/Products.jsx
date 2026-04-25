@@ -110,7 +110,9 @@ export default function Products() {
     setEditPrice(p.price ?? "");
     setEditImageUrl(p.imageUrl || "");
     setEditDescription(p.description || "");
-    setEditCategoryId(p.categoryId || p.category?.id || (categories[0]?.id || ""));
+    setEditCategoryId(
+      p.categoryId || p.category?.id || (categories[0]?.id || "")
+    );
     setEditOpen(true);
   };
 
@@ -150,28 +152,43 @@ export default function Products() {
     <>
       <NavBar />
 
-      <div className="container" style={{ marginTop: 40 }}>
-        <h4 className="mb-3">Products</h4>
+      <div className="container" style={{ marginTop: 28 }}>
+        {/* Center headline */}
+        <div className="mb-3">
+          <h2 className="m-0 text-center" style={{ fontWeight: 600 }}>
+            Products
+          </h2>
+        </div>
 
         {error ? <div className="alert alert-danger">{error}</div> : null}
 
         {/* Create */}
-        <div className="card mb-4">
+        <div className="card mb-4" style={{ borderRadius: 14 }}>
           <div className="card-body">
-            <h6 className="card-title">Create Product</h6>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h6 className="card-title m-0">Create Product</h6>
+              <span className="text-muted" style={{ fontSize: 13 }}>
+                Add SKU, name, unit, price, category
+              </span>
+            </div>
 
-            <form onSubmit={createProduct} className="row g-2">
-              <div className="col-md-2">
+            {/* IMPORTANT: md column total must be 12 */}
+            <form onSubmit={createProduct} className="row g-3 align-items-end">
+              {/* SKU */}
+              <div className="col-12 col-md-2">
+                <label className="form-label mb-1">SKU</label>
                 <input
                   className="form-control"
-                  placeholder="SKU"
+                  placeholder="SKU-001"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="col-md-3">
+              {/* Name */}
+              <div className="col-12 col-md-3">
+                <label className="form-label mb-1">Product name</label>
                 <input
                   className="form-control"
                   placeholder="Product name"
@@ -181,27 +198,36 @@ export default function Products() {
                 />
               </div>
 
-              <div className="col-md-2">
+              {/* Unit */}
+              <div className="col-12 col-md-2">
+                <label className="form-label mb-1">Unit</label>
                 <input
                   className="form-control"
-                  placeholder="Unit (pcs/kg/etc)"
+                  placeholder="pcs / ml / kg"
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="col-md-2">
+              {/* Price */}
+              <div className="col-12 col-md-2">
+                <label className="form-label mb-1">Price</label>
                 <input
                   className="form-control"
-                  placeholder="Price"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="col-md-2">
+              {/* Category (changed to col-md-2 so the row total = 12) */}
+              <div className="col-12 col-md-3">
+                <label className="form-label mb-1">Category</label>
                 <select
                   className="form-select"
                   value={categoryId}
@@ -217,26 +243,37 @@ export default function Products() {
                 </select>
               </div>
 
-              <div className="col-md-1">
-                <button className="btn btn-primary w-100">Create</button>
+              {/* Create button (centered vertically with inputs) */}
+              <div className="col-12 col-md-2 d-flex align-items-center justify-content-center" style={{ minWidth: 120 }}>
+              <button
+                className="btn btn-primary"
+                style={{ borderRadius: 12, fontWeight: 700, whiteSpace: "nowrap", paddingInline: 18 }}
+              >
+              Create
+              </button>
               </div>
 
+              {/* Image URL */}
               <div className="col-12">
+                <label className="form-label mb-1">Image URL (optional)</label>
                 <input
                   className="form-control"
-                  placeholder="Image URL (optional) - https://..."
+                  placeholder="https://... (jpg/png/webp)"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                 />
                 <div className="form-text">
-                  Tip: Use a direct image link (ends with .jpg/.png/.webp) or any https image URL.
+                  Tip: Use a direct image link (ends with .jpg/.png/.webp) or any
+                  https image URL.
                 </div>
               </div>
 
+              {/* Description */}
               <div className="col-12">
+                <label className="form-label mb-1">Description (optional)</label>
                 <input
                   className="form-control"
-                  placeholder="Description (optional)"
+                  placeholder="Description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -277,7 +314,7 @@ export default function Products() {
                           width: 70,
                           height: 50,
                           objectFit: "cover",
-                          borderRadius: 8,
+                          borderRadius: 10,
                           border: "1px solid #eee",
                           background: "#f2f2f2",
                         }}
@@ -290,13 +327,21 @@ export default function Products() {
                     </td>
                     <td>{p.code || "-"}</td>
                     <td>{p.sku}</td>
-                    <td>{p.name}</td>
-                    <td>{p.category?.name || categoryById.get(p.categoryId)?.name || "-"}</td>
+                    <td style={{ fontWeight: 600 }}>{p.name}</td>
+                    <td>
+                      {p.category?.name ||
+                        categoryById.get(p.categoryId)?.name ||
+                        "-"}
+                    </td>
                     <td>{p.unit}</td>
                     <td>{p.price ?? "-"}</td>
                     <td>{p.description || "-"}</td>
                     <td>
-                      <button className="btn btn-sm btn-outline-primary" onClick={() => openEdit(p)}>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        style={{ borderRadius: 10, whiteSpace: "nowrap" }}
+                        onClick={() => openEdit(p)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -321,15 +366,19 @@ export default function Products() {
         <>
           <div className="modal show" style={{ display: "block" }} tabIndex="-1">
             <div className="modal-dialog modal-lg">
-              <div className="modal-content">
+              <div className="modal-content" style={{ borderRadius: 14 }}>
                 <form onSubmit={saveEdit}>
                   <div className="modal-header">
                     <h5 className="modal-title">Edit Product</h5>
-                    <button type="button" className="btn-close" onClick={closeEdit} />
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={closeEdit}
+                    />
                   </div>
 
                   <div className="modal-body">
-                    <div className="row g-2">
+                    <div className="row g-3">
                       <div className="col-md-4">
                         <label className="form-label">SKU</label>
                         <input
@@ -364,6 +413,9 @@ export default function Products() {
                         <label className="form-label">Price</label>
                         <input
                           className="form-control"
+                          type="number"
+                          min="0"
+                          step="1"
                           value={editPrice}
                           onChange={(e) => setEditPrice(e.target.value)}
                           required
@@ -388,7 +440,9 @@ export default function Products() {
                       </div>
 
                       <div className="col-12">
-                        <label className="form-label">Image URL (optional)</label>
+                        <label className="form-label">
+                          Image URL (optional)
+                        </label>
                         <input
                           className="form-control"
                           value={editImageUrl}
@@ -397,7 +451,11 @@ export default function Products() {
                         />
                         <div className="mt-2">
                           <img
-                            src={editImageUrl?.trim() ? editImageUrl.trim() : FALLBACK_IMG}
+                            src={
+                              editImageUrl?.trim()
+                                ? editImageUrl.trim()
+                                : FALLBACK_IMG
+                            }
                             alt="Preview"
                             loading="lazy"
                             decoding="async"
@@ -405,7 +463,7 @@ export default function Products() {
                               width: "100%",
                               maxHeight: 220,
                               objectFit: "cover",
-                              borderRadius: 10,
+                              borderRadius: 12,
                               border: "1px solid #eee",
                               background: "#f2f2f2",
                             }}
@@ -431,7 +489,11 @@ export default function Products() {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-outline-secondary" onClick={closeEdit}>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={closeEdit}
+                    >
                       Cancel
                     </button>
                     <button className="btn btn-primary" disabled={savingEdit}>
