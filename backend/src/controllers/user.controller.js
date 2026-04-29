@@ -1,4 +1,10 @@
-import { listUsers, updateUser, deleteUser } from "../services/user.service.js";
+import {
+  listUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetUserPassword, // ✅ ADD
+} from "../services/user.service.js";
 
 export const listUsersController = async (req, res, next) => {
   try {
@@ -10,10 +16,30 @@ export const listUsersController = async (req, res, next) => {
   }
 };
 
+export const createUserController = async (req, res, next) => {
+  try {
+    const data = await createUser(req.body);
+    res.status(201).json({ success: true, message: "User created", data });
+  } catch (e) {
+    next(e);
+  }
+};
+
 export const updateUserController = async (req, res, next) => {
   try {
     const data = await updateUser(req.params.id, req.body);
     res.json({ success: true, message: "User updated", data });
+  } catch (e) {
+    next(e);
+  }
+};
+
+// ✅ NEW
+export const resetUserPasswordController = async (req, res, next) => {
+  try {
+    const { newPassword } = req.body;
+    const data = await resetUserPassword(req.params.id, { newPassword }, req.user);
+    res.json({ success: true, message: "Password reset", data });
   } catch (e) {
     next(e);
   }

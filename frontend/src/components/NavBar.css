@@ -1,18 +1,18 @@
 /* When dashboard shell is active, push page content away from sidebar + topbar */
 body.si-layout {
   background: #f7f8fb;
-  padding-left: 260px; /* sidebar width + gap */
-  padding-top: 64px;   /* topbar height */
+  padding-left: 220px; /* smaller sidebar */
+  padding-top: 54px;   /* smaller topbar */
 }
 
 /* Top bar */
 .si-topbar {
   position: fixed;
   top: 0;
-  left: 260px;
+  left: 220px;
   right: 0;
-  height: 64px;
-  background: rgba(255, 255, 255, 0.85);
+  height: 54px;
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #e9eaf2;
   z-index: 1100;
@@ -23,22 +23,29 @@ body.si-layout {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 0 18px;
+  padding: 0 14px;
 }
 
 .si-topbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .si-role-pill {
-  font-size: 13px;
-  padding: 6px 10px;
+  font-size: 12px;
+  padding: 5px 9px;
   border-radius: 999px;
-  background: #f2f7ff;      /* pastel blue */
+  background: #f2f7ff;
   border: 1px solid #d9e7ff;
   color: #264b87;
+  font-weight: 600;
+}
+
+.si-topbar .btn {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 10px;
 }
 
 /* Sidebar */
@@ -46,51 +53,70 @@ body.si-layout {
   position: fixed;
   top: 0;
   left: 0;
-  width: 260px;
+  width: 220px;
   height: 100vh;
-  padding: 18px 14px;
+  padding: 12px 10px;
   background: linear-gradient(180deg, #f6fbff 0%, #f7f4ff 60%, #fff7fb 100%);
   border-right: 1px solid #e9eaf2;
   z-index: 1200;
   overflow-y: auto;
 }
 
+/* Optional: cleaner scrollbar */
+.si-sidebar::-webkit-scrollbar {
+  width: 7px;
+}
+
+.si-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.si-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+  border-radius: 999px;
+}
+
+.si-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
 .si-brand {
   display: block;
   text-decoration: none;
-  margin-bottom: 14px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+  padding: 10px 10px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.72);
   border: 1px solid #ececf5;
+  text-align: center;
 }
 
 .si-brand-title {
-  font-weight: 800;
-  letter-spacing: 0.5px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
   color: #7600bc;
-  font-size: 20px;
-  line-height: 1.1;
+  font-size: 17px;
+  line-height: 1.08;
 }
 
 .si-brand-sub {
-  margin-top: 6px;
-  font-size: 12px;
+  margin-top: 5px;
+  font-size: 11px;
   color: #6a6f7d;
 }
 
 .si-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .si-nav-section {
-  margin-top: 10px;
-  margin-bottom: 4px;
-  padding: 0 10px;
-  font-size: 11px;
-  font-weight: 700;
+  margin-top: 8px;
+  margin-bottom: 3px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.7px;
   color: #7a8090;
@@ -99,28 +125,30 @@ body.si-layout {
 /* Links (pastel pills) */
 .si-link {
   display: block;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 8px 10px;
+  border-radius: 12px;
   text-decoration: none;
   color: #1f2a44;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.68);
   border: 1px solid #ececf5;
   transition: all 0.15s ease;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.25;
 }
 
 .si-link:hover {
   transform: translateY(-1px);
-  background: rgba(245, 250, 255, 0.9);
+  background: rgba(245, 250, 255, 0.95);
   border-color: #dfe7f7;
 }
 
-/* Pastel active state (NOT purple) */
+/* Pastel active state */
 .si-link.active {
-  background: #dff3ff;        /* pastel sky */
+  background: #dff3ff;
   border-color: #bfe9ff;
   color: #103a66;
-  box-shadow: 0 6px 16px rgba(16, 58, 102, 0.08);
+  box-shadow: 0 5px 14px rgba(16, 58, 102, 0.08);
 }
 
 /* muted link */
@@ -128,11 +156,28 @@ body.si-layout {
   background: transparent;
   border-color: transparent;
   color: #6a6f7d;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .si-link-muted:hover {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   border-color: #ececf5;
   color: #1f2a44;
+}
+
+/* Small screen safety */
+@media (max-width: 768px) {
+  body.si-layout {
+    padding-left: 0;
+    padding-top: 54px;
+  }
+
+  .si-topbar {
+    left: 0;
+  }
+
+  .si-sidebar {
+    width: 210px;
+    transform: translateX(-100%);
+  }
 }

@@ -1,3 +1,4 @@
+// frontend/src/pages/Products.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
@@ -43,11 +44,7 @@ export default function Products() {
     setError("");
     setLoading(true);
     try {
-      const [pRes, cRes] = await Promise.all([
-        client.get("/products"),
-        client.get("/categories"),
-      ]);
-
+      const [pRes, cRes] = await Promise.all([client.get("/products"), client.get("/categories")]);
       const prods = pRes.data?.data || [];
       const cats = cRes.data?.data || [];
 
@@ -58,6 +55,7 @@ export default function Products() {
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load data";
       setError(msg);
+
       if (msg.toLowerCase().includes("unauthorized")) {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
@@ -110,9 +108,7 @@ export default function Products() {
     setEditPrice(p.price ?? "");
     setEditImageUrl(p.imageUrl || "");
     setEditDescription(p.description || "");
-    setEditCategoryId(
-      p.categoryId || p.category?.id || (categories[0]?.id || "")
-    );
+    setEditCategoryId(p.categoryId || p.category?.id || (categories[0]?.id || ""));
     setEditOpen(true);
   };
 
@@ -152,153 +148,174 @@ export default function Products() {
     <>
       <NavBar />
 
-      <div className="container" style={{ marginTop: 28 }}>
-        {/* Center headline */}
-        <div className="mb-3">
-          <h2 className="m-0 text-center" style={{ fontWeight: 600 }}>
-            Products
-          </h2>
+      <div className="container" style={{ marginTop: 14 }}>
+        <div className="d-flex justify-content-between align-items-end mb-2">
+          <div>
+            <h4 className="m-0" style={{ fontWeight: 800, letterSpacing: 0.2 }}>
+              Products
+            </h4>
+            <div className="text-muted" style={{ fontSize: 12 }}>
+              Manage products, prices and images
+            </div>
+          </div>
         </div>
 
-        {error ? <div className="alert alert-danger">{error}</div> : null}
+        {error ? <div className="alert alert-danger py-2 mb-2">{error}</div> : null}
 
         {/* Create */}
-        <div className="card mb-4" style={{ borderRadius: 14 }}>
-          <div className="card-body">
+        <div className="card mb-3" style={{ borderRadius: 14 }}>
+          <div className="card-body" style={{ padding: 14 }}>
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <h6 className="card-title m-0">Create Product</h6>
-              <span className="text-muted" style={{ fontSize: 13 }}>
-                Add SKU, name, unit, price, category
+              <h6 className="card-title m-0" style={{ fontWeight: 800 }}>
+                Create Product
+              </h6>
+              <span className="badge rounded-pill text-bg-light" style={{ fontSize: 11 }}>
+                SKU • Name • Unit • Price • Category
               </span>
             </div>
 
-            {/* IMPORTANT: md column total must be 12 */}
-            <form onSubmit={createProduct} className="row g-3 align-items-end">
-              {/* SKU */}
-              <div className="col-12 col-md-2">
-                <label className="form-label mb-1">SKU</label>
-                <input
-                  className="form-control"
-                  placeholder="SKU-001"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  required
-                />
-              </div>
+            <form onSubmit={createProduct} className="row g-2 align-items-end">
+        {/* SKU */}
+        <div className="col-12 col-md-2">
+          <label className="form-label mb-1" style={{ fontSize: 12 }}>
+             SKU
+          </label>
+          <input
+             className="form-control form-control-sm"
+             placeholder="SKU-001"
+             value={sku}
+             onChange={(e) => setSku(e.target.value)}
+             required
+          />
+        </div>
 
-              {/* Name */}
-              <div className="col-12 col-md-3">
-                <label className="form-label mb-1">Product name</label>
-                <input
-                  className="form-control"
-                  placeholder="Product name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
+        {/* Name */}
+        <div className="col-12 col-md-2">
+          <label className="form-label mb-1" style={{ fontSize: 12 }}>
+            Product name
+          </label>
+          <input
+           className="form-control form-control-sm"
+           placeholder="Product name"
+           value={name}
+           onChange={(e) => setName(e.target.value)}
+           required
+          />
+        </div>
 
-              {/* Unit */}
-              <div className="col-12 col-md-2">
-                <label className="form-label mb-1">Unit</label>
-                <input
-                  className="form-control"
-                  placeholder="pcs / ml / kg"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  required
-                />
-              </div>
+        {/* Unit */}
+        <div className="col-12 col-md-2">
+          <label className="form-label mb-1" style={{ fontSize: 12 }}>
+            Unit
+          </label>
+          <input
+            className="form-control form-control-sm"
+            placeholder="pcs / ml / kg"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            required
+          />
+        </div>
 
-              {/* Price */}
-              <div className="col-12 col-md-2">
-                <label className="form-label mb-1">Price</label>
-                <input
-                  className="form-control"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                />
-              </div>
+        {/* Price */}
+        <div className="col-12 col-md-2">
+          <label className="form-label mb-1" style={{ fontSize: 12 }}>
+            Price
+          </label>
+          <input
+            className="form-control form-control-sm"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="0"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
+        </div>
 
-              {/* Category (changed to col-md-2 so the row total = 12) */}
-              <div className="col-12 col-md-3">
-                <label className="form-label mb-1">Category</label>
-                <select
-                  className="form-select"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  required
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code ? `${c.code} - ` : ""}
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {/* Category - made wider */}
+        <div className="col-12 col-md-3">
+          <label className="form-label mb-1" style={{ fontSize: 12 }}>
+            Category
+          </label>
+          <select
+            className="form-select form-select-sm"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            required
+          >
+          {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+          {c.code ? `${c.code} - ` : ""}
+          {c.name}
+          </option>
+          ))}
+          </select>
+        </div>
 
-              {/* Create button (centered vertically with inputs) */}
-              <div className="col-12 col-md-2 d-flex align-items-center justify-content-center" style={{ minWidth: 120 }}>
-              <button
-                className="btn btn-primary"
-                style={{ borderRadius: 12, fontWeight: 700, whiteSpace: "nowrap", paddingInline: 18 }}
-              >
-              Create
-              </button>
-              </div>
+       {/* Create button */}
+        <div className="col-12 col-md-1 d-grid">
+         <button
+          className="btn btn-primary btn-sm"
+          style={{
+          borderRadius: 12,
+          fontWeight: 800,
+          whiteSpace: "nowrap",
+          paddingInline: 10,
+          minHeight: 38,
+        }}
+        >
+          Create
+         </button>
+        </div>
 
-              {/* Image URL */}
-              <div className="col-12">
-                <label className="form-label mb-1">Image URL (optional)</label>
-                <input
-                  className="form-control"
-                  placeholder="https://... (jpg/png/webp)"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                />
-                <div className="form-text">
-                  Tip: Use a direct image link (ends with .jpg/.png/.webp) or any
-                  https image URL.
-                </div>
-              </div>
+      {/* Image URL - slightly smaller */}
+      <div className="col-12 col-md-6">
+       <label className="form-label mb-1" style={{ fontSize: 12 }}>
+             Image URL (optional)
+        </label>
+          <input
+             className="form-control form-control-sm"
+             placeholder="https://... (jpg/png/webp)"
+             value={imageUrl}
+             onChange={(e) => setImageUrl(e.target.value)}
+          />
+        </div>
 
-              {/* Description */}
-              <div className="col-12">
-                <label className="form-label mb-1">Description (optional)</label>
-                <input
-                  className="form-control"
-                  placeholder="Description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-            </form>
+       {/* Description - same line as Image URL */}
+         <div className="col-12 col-md-6">
+          <label className="form-label mb-1" style={{ fontSize: 12 }}>
+             Description (optional)
+          </label>
+          <input
+            className="form-control form-control-sm"
+            placeholder="Short description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          </div>
+          </form>
           </div>
         </div>
 
         {/* List */}
         {loading ? (
-          <div>Loading...</div>
+          <div style={{ fontSize: 13 }}>Loading...</div>
         ) : (
           <div className="table-responsive">
-            <table className="table table-bordered align-middle">
-              <thead>
+            <table className="table table-sm table-bordered align-middle" style={{ fontSize: 13 }}>
+              <thead style={{ background: "#f7f7ff" }}>
                 <tr>
-                  <th style={{ width: 90 }}>Image</th>
-                  <th>Code</th>
-                  <th>SKU</th>
+                  <th style={{ width: 76 }}>Image</th>
+                  <th style={{ width: 80 }}>Code</th>
+                  <th style={{ width: 120 }}>SKU</th>
                   <th>Name</th>
-                  <th>Category</th>
-                  <th>Unit</th>
-                  <th>Price</th>
+                  <th style={{ width: 160 }}>Category</th>
+                  <th style={{ width: 90 }}>Unit</th>
+                  <th style={{ width: 90 }}>Price</th>
                   <th>Description</th>
-                  <th style={{ width: 120 }}>Actions</th>
+                  <th style={{ width: 110 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,31 +328,25 @@ export default function Products() {
                         loading="lazy"
                         decoding="async"
                         style={{
-                          width: 70,
-                          height: 50,
+                          width: 58,
+                          height: 42,
                           objectFit: "cover",
                           borderRadius: 10,
                           border: "1px solid #eee",
                           background: "#f2f2f2",
                         }}
                         onError={(e) => {
-                          if (e.currentTarget.src !== FALLBACK_IMG) {
-                            e.currentTarget.src = FALLBACK_IMG;
-                          }
+                          if (e.currentTarget.src !== FALLBACK_IMG) e.currentTarget.src = FALLBACK_IMG;
                         }}
                       />
                     </td>
                     <td>{p.code || "-"}</td>
                     <td>{p.sku}</td>
-                    <td style={{ fontWeight: 600 }}>{p.name}</td>
-                    <td>
-                      {p.category?.name ||
-                        categoryById.get(p.categoryId)?.name ||
-                        "-"}
-                    </td>
+                    <td style={{ fontWeight: 700 }}>{p.name}</td>
+                    <td>{p.category?.name || categoryById.get(p.categoryId)?.name || "-"}</td>
                     <td>{p.unit}</td>
                     <td>{p.price ?? "-"}</td>
-                    <td>{p.description || "-"}</td>
+                    <td className="text-muted">{p.description || "-"}</td>
                     <td>
                       <button
                         className="btn btn-sm btn-outline-primary"
@@ -350,7 +361,7 @@ export default function Products() {
 
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="text-center">
+                    <td colSpan="9" className="text-center text-muted py-3">
                       No products found
                     </td>
                   </tr>
@@ -365,54 +376,58 @@ export default function Products() {
       {editOpen ? (
         <>
           <div className="modal show" style={{ display: "block" }} tabIndex="-1">
-            <div className="modal-dialog modal-lg">
+            <div className="modal-dialog modal-lg modal-dialog-centered">
               <div className="modal-content" style={{ borderRadius: 14 }}>
                 <form onSubmit={saveEdit}>
-                  <div className="modal-header">
+                  <div className="modal-header py-2">
                     <h5 className="modal-title">Edit Product</h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={closeEdit}
-                    />
+                    <button type="button" className="btn-close" onClick={closeEdit} />
                   </div>
 
                   <div className="modal-body">
-                    <div className="row g-3">
-                      <div className="col-md-4">
-                        <label className="form-label">SKU</label>
+                    <div className="row g-2">
+                      <div className="col-md-3">
+                        <label className="form-label" style={{ fontSize: 12 }}>
+                          SKU
+                        </label>
                         <input
-                          className="form-control"
+                          className="form-control form-control-sm"
                           value={editSku}
                           onChange={(e) => setEditSku(e.target.value)}
                           required
                         />
                       </div>
 
-                      <div className="col-md-4">
-                        <label className="form-label">Name</label>
+                      <div className="col-md-3">
+                        <label className="form-label" style={{ fontSize: 12 }}>
+                          Name
+                        </label>
                         <input
-                          className="form-control"
+                          className="form-control form-control-sm"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           required
                         />
                       </div>
 
-                      <div className="col-md-4">
-                        <label className="form-label">Unit</label>
+                      <div className="col-md-3">
+                        <label className="form-label" style={{ fontSize: 12 }}>
+                          Unit
+                        </label>
                         <input
-                          className="form-control"
+                          className="form-control form-control-sm"
                           value={editUnit}
                           onChange={(e) => setEditUnit(e.target.value)}
                           required
                         />
                       </div>
 
-                      <div className="col-md-4">
-                        <label className="form-label">Price</label>
+                      <div className="col-md-3">
+                        <label className="form-label" style={{ fontSize: 12 }}>
+                          Price
+                        </label>
                         <input
-                          className="form-control"
+                          className="form-control form-control-sm"
                           type="number"
                           min="0"
                           step="1"
@@ -422,10 +437,12 @@ export default function Products() {
                         />
                       </div>
 
-                      <div className="col-md-8">
-                        <label className="form-label">Category</label>
+                      <div className="col-md-3">
+                        <label className="form-label" style={{ fontSize: 12 }}>
+                          Category
+                        </label>
                         <select
-                          className="form-select"
+                          className="form-select form-select-sm"
                           value={editCategoryId}
                           onChange={(e) => setEditCategoryId(e.target.value)}
                           required
@@ -440,46 +457,42 @@ export default function Products() {
                       </div>
 
                       <div className="col-12">
-                        <label className="form-label">
+                        <label className="form-label" style={{ fontSize: 12 }}>
                           Image URL (optional)
                         </label>
                         <input
-                          className="form-control"
+                          className="form-control form-control-sm"
                           value={editImageUrl}
                           onChange={(e) => setEditImageUrl(e.target.value)}
                           placeholder="https://..."
                         />
                         <div className="mt-2">
                           <img
-                            src={
-                              editImageUrl?.trim()
-                                ? editImageUrl.trim()
-                                : FALLBACK_IMG
-                            }
+                            src={editImageUrl?.trim() ? editImageUrl.trim() : FALLBACK_IMG}
                             alt="Preview"
                             loading="lazy"
                             decoding="async"
                             style={{
                               width: "100%",
-                              maxHeight: 220,
+                              maxHeight: 200,
                               objectFit: "cover",
                               borderRadius: 12,
                               border: "1px solid #eee",
                               background: "#f2f2f2",
                             }}
                             onError={(e) => {
-                              if (e.currentTarget.src !== FALLBACK_IMG) {
-                                e.currentTarget.src = FALLBACK_IMG;
-                              }
+                              if (e.currentTarget.src !== FALLBACK_IMG) e.currentTarget.src = FALLBACK_IMG;
                             }}
                           />
                         </div>
                       </div>
 
                       <div className="col-12">
-                        <label className="form-label">Description</label>
+                        <label className="form-label" style={{ fontSize: 12 }}>
+                          Description
+                        </label>
                         <input
-                          className="form-control"
+                          className="form-control form-control-sm"
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           placeholder="Optional"
@@ -488,15 +501,11 @@ export default function Products() {
                     </div>
                   </div>
 
-                  <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={closeEdit}
-                    >
+                  <div className="modal-footer py-2">
+                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={closeEdit}>
                       Cancel
                     </button>
-                    <button className="btn btn-primary" disabled={savingEdit}>
+                    <button className="btn btn-primary btn-sm" disabled={savingEdit}>
                       {savingEdit ? "Saving..." : "Save Changes"}
                     </button>
                   </div>

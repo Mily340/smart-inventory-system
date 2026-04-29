@@ -1,0 +1,93 @@
+:root{
+  --bg: #f7f8ff;
+  --card: #ffffff;
+  --line: #e9e7f6;
+
+  --text: #1f2340;
+  --muted: #6b6f8f;
+
+  --primary: #7c83ff;      /* pastel indigo */
+  --primary-2: #a78bfa;    /* pastel violet */
+  --mint: #7ae7c7;
+  --pink: #ffb3c7;
+  --sun: #ffd6a5;
+
+  --shadow: 0 10px 25px rgba(27, 31, 59, 0.06);
+  --radius: 16px;
+}
+
+body{
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page-wrap{
+  padding: 18px 0;
+}
+
+.page-title{
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.card-soft{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.table-soft{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden; /* rounded table */
+}
+
+.table-soft table{
+  margin: 0;
+}
+
+.table-soft thead th{
+  background: #f2f1ff;
+  color: var(--text);
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+}
+
+.table-soft td, .table-soft th{
+  vertical-align: middle;
+}
+
+.badge-soft{
+  border: 1px solid var(--line);
+  background: #f7f6ff;
+  color: var(--text);
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.btn-primary{
+  background: var(--primary);
+  border-color: var(--primary);
+  font-weight: 700;
+  border-radius: 12px;
+}
+.btn-primary:hover{
+  filter: brightness(0.97);
+}
+
+.btn-outline-secondary{
+  border-radius: 12px;
+}
+
+.form-control, .form-select{
+  border-radius: 12px;
+  border-color: var(--line);
+}
+.form-control:focus, .form-select:focus{
+  border-color: rgba(124, 131, 255, 0.6);
+  box-shadow: 0 0 0 .2rem rgba(124, 131, 255, 0.18);
+}

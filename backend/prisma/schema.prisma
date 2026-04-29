@@ -86,14 +86,18 @@ model Branch {
   address           String
   latitude          Float
   longitude         Float
+
+  // ✅ NEW: branch active/inactive
+  isActive          Boolean            @default(true)
+
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
 
   users             User[]
   inventoryItems    Inventory[]
   stockTransactions StockTransaction[]
-  outgoingTransfers TransferRequest[]   @relation("FromBranch")
-  incomingTransfers TransferRequest[]   @relation("ToBranch")
+  outgoingTransfers TransferRequest[]  @relation("FromBranch")
+  incomingTransfers TransferRequest[]  @relation("ToBranch")
   orders            Order[]
   notifications     Notification[]
 
