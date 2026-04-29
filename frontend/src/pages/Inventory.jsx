@@ -4,6 +4,71 @@ import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import NavBar from "../components/NavBar";
 
+const statusBadgeStyle = (status) => {
+  const base = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "6px 10px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 800,
+    border: "1px solid transparent",
+    whiteSpace: "nowrap",
+  };
+
+  const map = {
+    IN_STOCK: {
+      background: "#ECFDF5",
+      color: "#047857",
+      borderColor: "#A7F3D0",
+    },
+    LOW_STOCK: {
+      background: "#FFF7ED",
+      color: "#C2410C",
+      borderColor: "#FED7AA",
+    },
+    OUT_OF_STOCK: {
+      background: "#FEF2F2",
+      color: "#B91C1C",
+      borderColor: "#FECACA",
+    },
+  };
+
+  return {
+    ...base,
+    ...(map[status] || {
+      background: "#F3F4F6",
+      color: "#374151",
+      borderColor: "#E5E7EB",
+    }),
+  };
+};
+
+const getStockStatus = (qty, reorderLevel) => {
+  if (qty <= 0) {
+    return {
+      key: "OUT_OF_STOCK",
+      label: "Out of Stock",
+      icon: "bi-x-circle",
+    };
+  }
+
+  if (reorderLevel > 0 && qty <= reorderLevel) {
+    return {
+      key: "LOW_STOCK",
+      label: "Low Stock",
+      icon: "bi-exclamation-triangle",
+    };
+  }
+
+  return {
+    key: "IN_STOCK",
+    label: "In Stock",
+    icon: "bi-check-circle",
+  };
+};
+
 export default function Inventory() {
   const navigate = useNavigate();
 
@@ -18,57 +83,15 @@ export default function Inventory() {
   const [reorderLevel, setReorderLevel] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchAll = async (selectedBranchId) => {
-    setError("");
-    setLoading(true);
+  const role = localStorage.getItem("role") || "";
+  const assignedBranchId = localStorage.getItem("branchId") || "";
 
-    try {
-      const [bRes, pRes] = await Promise.all([
-        client.get("/branches"),
-        client.get("/products"),
-      ]);
-
-      const b = bRes.data?.data || [];
-      const p = pRes.data?.data || [];
-
-      setBranches(b);
-      setProducts(p);
-
-      const bId = selectedBranchId || b[0]?.id || "";
-      setBranchId(bId);
-
-      // keep existing selected product if possible
-      const currentProductExists = p.some((x) => x.id === productId);
-      const nextProductId = currentProductExists ? productId : p[0]?.id || "";
-      setProductId(nextProductId);
-
-      if (bId) {
-        const invRes = await client.get(`/inventory?branchId=${bId}`);
-        setInventory(invRes.data?.data || []);
-      } else {
-        setInventory([]);
-      }
-    } catch (err) {
-      const msg = err?.response?.data?.message || "Failed to load inventory";
-      setError(msg);
-
-      if (String(msg).toLowerCase().includes("unauthorized")) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        localStorage.removeItem("fullName");
-        navigate("/login");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const isBranchManager = role === "BRANCH_MANAGER";
+  const isBranchStaff = role === "BRANCH_STAFF";
+  const isBranchScoped = isBranchManager || isBranchStaff;
 
   const selectedBranch = useMemo(
     () => branches.find((b) => b.id === branchId) || null,
@@ -80,32 +103,155 @@ export default function Inventory() {
     [products, productId]
   );
 
+  const selectedInventoryRow = useMemo(
+    () => inventory.find((r) => r.productId === productId) || null,
+    [inventory, productId]
+  );
+
+  const selectedQty = Number(selectedInventoryRow?.quantity || 0);
+  const selectedReorder = Number(selectedInventoryRow?.reorderLevel || 0);
+  const selectedStatus = getStockStatus(selectedQty, selectedReorder);
+
   const stats = useMemo(() => {
-    const totalItems = inventory.length;
-    const totalQty = inventory.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
-    const lowCount = inventory.reduce(
-      (sum, r) =>
-        sum + ((Number(r.quantity) || 0) <= (Number(r.reorderLevel) || 0) ? 1 : 0),
-      0
-    );
-    return { totalItems, totalQty, lowCount };
+    let totalQty = 0;
+    let lowCount = 0;
+    let outCount = 0;
+
+    inventory.forEach((r) => {
+      const q = Number(r.quantity) || 0;
+      const rl = Number(r.reorderLevel) || 0;
+      const status = getStockStatus(q, rl);
+
+      totalQty += q;
+      if (status.key === "LOW_STOCK") lowCount += 1;
+      if (status.key === "OUT_OF_STOCK") outCount += 1;
+    });
+
+    return {
+      totalItems: inventory.length,
+      totalQty,
+      lowCount,
+      outCount,
+    };
   }, [inventory]);
 
-  const changeBranch = (e) => {
+  const handleUnauthorized = (msg) => {
+    if (String(msg || "").toLowerCase().includes("unauthorized")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("fullName");
+      localStorage.removeItem("branchId");
+      navigate("/login");
+      return true;
+    }
+
+    return false;
+  };
+
+  const loadInventory = async (bId) => {
+    if (!bId) {
+      setInventory([]);
+      return;
+    }
+
+    const invRes = await client.get(`/inventory?branchId=${bId}`);
+    const data = invRes.data?.data || [];
+
+    data.sort((a, b) => {
+      const nameA = a.product?.name || "";
+      const nameB = b.product?.name || "";
+      return nameA.localeCompare(nameB);
+    });
+
+    setInventory(data);
+  };
+
+  const fetchAll = async (selectedBranchId) => {
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isBranchScoped && !assignedBranchId) {
+        setError("No branch is assigned to this account. Please contact the administrator.");
+        setBranches([]);
+        setInventory([]);
+        setLoading(false);
+        return;
+      }
+
+      const [bRes, pRes] = await Promise.all([
+        client.get("/branches"),
+        client.get("/products"),
+      ]);
+
+      const b = bRes.data?.data || [];
+      const p = pRes.data?.data || [];
+
+      setBranches(b);
+      setProducts(p);
+
+      const bId = isBranchScoped ? assignedBranchId : selectedBranchId || branchId || b[0]?.id || "";
+      setBranchId(bId);
+
+      const currentProductExists = p.some((x) => x.id === productId);
+      const nextProductId = currentProductExists ? productId : p[0]?.id || "";
+      setProductId(nextProductId);
+
+      await loadInventory(bId);
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to load inventory";
+      setError(msg);
+      handleUnauthorized(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const changeBranch = async (e) => {
     const id = e.target.value;
     setBranchId(id);
-    fetchAll(id);
+    setError("");
+    setLoading(true);
+
+    try {
+      await loadInventory(id);
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to load branch inventory";
+      setError(msg);
+      handleUnauthorized(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const qtyNum = Number(qty);
   const reorderNum = Number(reorderLevel);
 
-  const canDoQty = branchId && productId && Number.isFinite(qtyNum) && qtyNum > 0;
-  const canDoReorder = branchId && productId && Number.isFinite(reorderNum) && reorderNum >= 0;
+  const canDoQty =
+    branchId &&
+    productId &&
+    Number.isFinite(qtyNum) &&
+    Number.isInteger(qtyNum) &&
+    qtyNum > 0 &&
+    !actionLoading;
+
+  const canDoReorder =
+    branchId &&
+    productId &&
+    Number.isFinite(reorderNum) &&
+    Number.isInteger(reorderNum) &&
+    reorderNum >= 0 &&
+    !actionLoading;
 
   const stockIn = async (e) => {
     e.preventDefault();
     setError("");
+    setActionLoading(true);
 
     try {
       await client.post("/inventory/stock-in", {
@@ -114,16 +260,20 @@ export default function Inventory() {
         quantity: qtyNum,
         reason: "Frontend stock in",
       });
+
       setQty("");
-      fetchAll(branchId);
+      await fetchAll(branchId);
     } catch (err) {
       setError(err?.response?.data?.message || "Stock-in failed");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const stockOut = async (e) => {
     e.preventDefault();
     setError("");
+    setActionLoading(true);
 
     try {
       await client.post("/inventory/stock-out", {
@@ -132,16 +282,20 @@ export default function Inventory() {
         quantity: qtyNum,
         reason: "Frontend stock out",
       });
+
       setQty("");
-      fetchAll(branchId);
+      await fetchAll(branchId);
     } catch (err) {
       setError(err?.response?.data?.message || "Stock-out failed");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const updateReorder = async (e) => {
     e.preventDefault();
     setError("");
+    setActionLoading(true);
 
     try {
       await client.patch("/inventory/reorder-level", {
@@ -149,93 +303,170 @@ export default function Inventory() {
         productId,
         reorderLevel: reorderNum,
       });
+
       setReorderLevel("");
-      fetchAll(branchId);
+      await fetchAll(branchId);
     } catch (err) {
       setError(err?.response?.data?.message || "Update reorder level failed");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  // ---------- Compact styles ----------
-  const cardStyle = {
-    borderRadius: 16,
-    border: "1px solid #E8EEF7",
-    boxShadow: "0 10px 26px rgba(28, 39, 64, 0.05)",
+  const pageWrapStyle = {
+    marginTop: 18,
+    paddingBottom: 26,
   };
 
-  const pillStyle = (bg, color, border) => ({
-    background: bg,
-    color,
-    border: `1px solid ${border}`,
-    padding: "6px 10px",
-    borderRadius: 999,
-    fontWeight: 700,
-    fontSize: 13,
-  });
+  const panelStyle = {
+    borderRadius: 18,
+    border: "1px solid rgba(148,163,184,.35)",
+    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    overflow: "hidden",
+  };
+
+  const headerCardStyle = {
+    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.25)",
+  };
+
+  const inputStyle = {
+    borderRadius: 12,
+  };
 
   return (
     <>
       <NavBar />
 
-      <div className="container" style={{ marginTop: 18, marginBottom: 24 }}>
-        {/* Header (compact) */}
-        <div className="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-2">
+      <div className="container-fluid px-4" style={pageWrapStyle}>
+        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 850, letterSpacing: 0.2, fontSize: 28 }}>
+            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Inventory
             </h2>
-            <div className="text-muted" style={{ marginTop: 2, fontSize: 13 }}>
-              Stock operations & branch overview
+            <div className="text-muted" style={{ marginTop: 4 }}>
+              {isBranchScoped
+                ? "Manage stock operations for your assigned branch."
+                : "Manage stock operations, reorder levels, and branch inventory."}
             </div>
           </div>
 
-          <div className="d-flex gap-2 flex-wrap">
-            <span style={pillStyle("#EAF2FF", "#2457C5", "#CFE0FF")}>
-              Branch:{" "}
-              {selectedBranch
-                ? `${selectedBranch.code ? selectedBranch.code + " - " : ""}${selectedBranch.name}`
-                : "-"}
-            </span>
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <InfoPill
+              color="#1D4ED8"
+              bg="#EFF6FF"
+              border="#BFDBFE"
+              label="Branch"
+              value={
+                selectedBranch
+                  ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
+                  : "-"
+              }
+            />
 
-            <span style={pillStyle("#F4F0FF", "#5B3CC4", "#E0D7FF")}>
-              Product:{" "}
-              {selectedProduct
-                ? `${selectedProduct.code ? selectedProduct.code + " - " : ""}${selectedProduct.name}`
-                : "-"}
-            </span>
+            <InfoPill
+              color="#5B21B6"
+              bg="#F5F3FF"
+              border="#DDD6FE"
+              label="Product"
+              value={
+                selectedProduct
+                  ? `${selectedProduct.code ? `${selectedProduct.code} - ` : ""}${selectedProduct.name}`
+                  : "-"
+              }
+            />
+
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              style={{
+                borderRadius: 10,
+                fontWeight: 700,
+                padding: "8px 14px",
+                background: "rgba(255,255,255,.85)",
+              }}
+              onClick={() => fetchAll(branchId)}
+              disabled={loading}
+            >
+              <i className="bi bi-arrow-clockwise me-1"></i>
+              Refresh
+            </button>
           </div>
         </div>
 
-        {error ? <div className="alert alert-danger py-2 my-2">{error}</div> : null}
+        {error ? (
+          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+            {error}
+          </div>
+        ) : null}
 
-        {/* Filters (compact) */}
-        <div className="card mb-2" style={cardStyle}>
-          <div className="card-body" style={{ padding: 12 }}>
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body" style={headerCardStyle}>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                  Select Branch & Product
+                </div>
+                <div className="text-muted" style={{ fontSize: 13 }}>
+                  Choose the branch and product before applying stock actions.
+                </div>
+              </div>
+
+              <span
+                className="text-muted"
+                style={{
+                  fontSize: 12,
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(148,163,184,.35)",
+                  background: "rgba(255,255,255,.85)",
+                }}
+              >
+                {isBranchScoped ? "Branch locked" : "Branch selectable"}
+              </span>
+            </div>
+          </div>
+
+          <div className="card-body">
             <div className="row g-2 align-items-end">
               <div className="col-12 col-lg-6">
-                <label className="form-label fw-semibold mb-1" style={{ fontSize: 13 }}>
-                  Branch
-                </label>
-                <select
-                  className="form-select form-select-sm"
-                  value={branchId}
-                  onChange={changeBranch}
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.code ? `${b.code} - ` : ""}
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="form-label small text-muted mb-1">Branch</label>
+
+                {isBranchScoped ? (
+                  <div
+                    className="form-control form-control-sm"
+                    style={{
+                      ...inputStyle,
+                      background: "#F8FAFC",
+                      color: "#0F172A",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {selectedBranch
+                      ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
+                      : "Assigned Branch"}
+                  </div>
+                ) : (
+                  <select
+                    className="form-select form-select-sm"
+                    style={inputStyle}
+                    value={branchId}
+                    onChange={changeBranch}
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code ? `${b.code} - ` : ""}
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="col-12 col-lg-6">
-                <label className="form-label fw-semibold mb-1" style={{ fontSize: 13 }}>
-                  Product
-                </label>
+                <label className="form-label small text-muted mb-1">Product</label>
                 <select
                   className="form-select form-select-sm"
+                  style={inputStyle}
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
                 >
@@ -251,183 +482,333 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* KPI cards (compact) */}
-        <div className="row g-2 mb-2">
-          <div className="col-12 col-md-4">
-            <div className="card h-100" style={cardStyle}>
-              <div className="card-body" style={{ padding: 12 }}>
-                <div className="text-muted" style={{ fontSize: 12 }}>
-                  Total Items
+        <div className="row g-3 mb-3">
+          <SummaryCard
+            title="Total Items"
+            value={stats.totalItems}
+            icon="bi-box-seam"
+            hint="Products listed in this branch"
+          />
+          <SummaryCard
+            title="Low Stock"
+            value={stats.lowCount}
+            icon="bi-exclamation-triangle"
+            hint="Qty at or below reorder level"
+          />
+          <SummaryCard
+            title="Out of Stock"
+            value={stats.outCount}
+            icon="bi-x-circle"
+            hint="Products with zero quantity"
+          />
+          <SummaryCard
+            title="Total Quantity"
+            value={stats.totalQty}
+            icon="bi-bar-chart"
+            hint="Sum of all stock quantities"
+          />
+        </div>
+
+        <div className="row g-3 mb-3">
+          <div className="col-12 col-xl-4">
+            <div className="card h-100" style={panelStyle}>
+              <div className="card-body" style={headerCardStyle}>
+                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                  Selected Product
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 850, lineHeight: 1.1 }}>
-                  {stats.totalItems}
+                <div className="text-muted" style={{ fontSize: 13 }}>
+                  Current stock condition.
                 </div>
-                <div className="text-muted" style={{ fontSize: 12 }}>
-                  products listed in this branch
+              </div>
+
+              <div className="card-body">
+                <div className="mb-2">
+                  <div className="text-muted small">Product</div>
+                  <div style={{ fontWeight: 900, color: "#0F172A" }}>
+                    {selectedProduct
+                      ? `${selectedProduct.code ? `${selectedProduct.code} - ` : ""}${selectedProduct.name}`
+                      : "-"}
+                  </div>
                 </div>
+
+                <div className="row g-2 mb-3">
+                  <MiniStat title="Quantity" value={selectedQty} />
+                  <MiniStat title="Reorder" value={selectedReorder} />
+                </div>
+
+                <span style={statusBadgeStyle(selectedStatus.key)}>
+                  <i className={`bi ${selectedStatus.icon}`}></i>
+                  {selectedStatus.label}
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="col-12 col-md-4">
-            <div className="card h-100" style={cardStyle}>
-              <div className="card-body" style={{ padding: 12 }}>
-                <div className="text-muted" style={{ fontSize: 12 }}>
-                  Low Stock Items
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 850, lineHeight: 1.1 }}>
-                  {stats.lowCount}
-                </div>
-                <div className="text-muted" style={{ fontSize: 12 }}>
-                  qty ≤ reorder level
+          <div className="col-12 col-xl-8">
+            <div className="card h-100" style={panelStyle}>
+              <div className="card-body" style={headerCardStyle}>
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                      Stock Actions
+                    </div>
+                    <div className="text-muted" style={{ fontSize: 13 }}>
+                      Apply stock-in, stock-out, or reorder-level updates.
+                    </div>
+                  </div>
+
+                  <span
+                    className="text-muted"
+                    style={{
+                      fontSize: 12,
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      border: "1px solid rgba(148,163,184,.35)",
+                      background: "rgba(255,255,255,.85)",
+                    }}
+                  >
+                    Selected product only
+                  </span>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="col-12 col-md-4">
-            <div className="card h-100" style={cardStyle}>
-              <div className="card-body" style={{ padding: 12 }}>
-                <div className="text-muted" style={{ fontSize: 12 }}>
-                  Total Quantity
+              <div className="card-body">
+                <div className="row g-2 align-items-end">
+                  <div className="col-12 col-lg-4">
+                    <label className="form-label small text-muted mb-1">Quantity</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      placeholder="e.g., 10"
+                      value={qty}
+                      onChange={(e) => setQty(e.target.value)}
+                      inputMode="numeric"
+                    />
+                  </div>
+
+                  <div className="col-6 col-lg-4">
+                    <form onSubmit={stockIn}>
+                      <button
+                        className="btn btn-success btn-sm w-100"
+                        style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                        type="submit"
+                        disabled={!canDoQty}
+                      >
+                        <i className="bi bi-plus-circle me-1"></i>
+                        Stock In
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="col-6 col-lg-4">
+                    <form onSubmit={stockOut}>
+                      <button
+                        className="btn btn-danger btn-sm w-100"
+                        style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                        type="submit"
+                        disabled={!canDoQty}
+                      >
+                        <i className="bi bi-dash-circle me-1"></i>
+                        Stock Out
+                      </button>
+                    </form>
+                  </div>
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 850, lineHeight: 1.1 }}>
-                  {stats.totalQty}
-                </div>
-                <div className="text-muted" style={{ fontSize: 12 }}>
-                  sum of all quantities
-                </div>
+
+                <hr className="my-3" />
+
+                <form className="row g-2 align-items-end" onSubmit={updateReorder}>
+                  <div className="col-12 col-lg-8">
+                    <label className="form-label small text-muted mb-1">Reorder Level</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      placeholder="e.g., 5"
+                      value={reorderLevel}
+                      onChange={(e) => setReorderLevel(e.target.value)}
+                      inputMode="numeric"
+                    />
+                  </div>
+
+                  <div className="col-12 col-lg-4">
+                    <button
+                      className="btn btn-primary btn-sm w-100"
+                      style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                      type="submit"
+                      disabled={!canDoReorder}
+                    >
+                      Update Reorder
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stock actions (compact) */}
-        <div className="card mb-3" style={cardStyle}>
-          <div className="card-body" style={{ padding: 12 }}>
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-              <h5 className="m-0" style={{ fontWeight: 850, fontSize: 18 }}>
-                Stock Actions
-              </h5>
-              <span className="text-muted" style={{ fontSize: 13 }}>
-                Choose branch + product, then apply updates
-              </span>
-            </div>
-
-            <div className="row g-2 align-items-end">
-              <div className="col-12 col-lg-4">
-                <label className="form-label fw-semibold mb-1" style={{ fontSize: 13 }}>
-                  Quantity
-                </label>
-                <input
-                  className="form-control form-control-sm"
-                  placeholder="e.g., 10"
-                  value={qty}
-                  onChange={(e) => setQty(e.target.value)}
-                  inputMode="numeric"
-                />
+        <div className="card" style={panelStyle}>
+          <div className="card-body" style={headerCardStyle}>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                Inventory List
               </div>
 
-              <div className="col-12 col-lg-4">
-                <form onSubmit={stockIn}>
-                  <button className="btn btn-success btn-sm w-100" type="submit" disabled={!canDoQty}>
-                    Stock In
-                  </button>
-                </form>
-              </div>
-
-              <div className="col-12 col-lg-4">
-                <form onSubmit={stockOut}>
-                  <button className="btn btn-danger btn-sm w-100" type="submit" disabled={!canDoQty}>
-                    Stock Out
-                  </button>
-                </form>
+              <div className="text-muted" style={{ fontSize: 13 }}>
+                {loading ? "Loading..." : `${inventory.length} record(s)`}
               </div>
             </div>
-
-            <hr className="my-3" />
-
-            <form className="row g-2 align-items-end" onSubmit={updateReorder}>
-              <div className="col-12 col-lg-8">
-                <label className="form-label fw-semibold mb-1" style={{ fontSize: 13 }}>
-                  Reorder Level
-                </label>
-                <input
-                  className="form-control form-control-sm"
-                  placeholder="e.g., 5"
-                  value={reorderLevel}
-                  onChange={(e) => setReorderLevel(e.target.value)}
-                  inputMode="numeric"
-                />
-              </div>
-
-              <div className="col-12 col-lg-4">
-                <button className="btn btn-primary btn-sm w-100" type="submit" disabled={!canDoReorder}>
-                  Update Reorder Level
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
 
-        {/* Table (compact) */}
-        {loading ? (
-          <div className="text-muted" style={{ fontSize: 13 }}>
-            Loading...
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table table-bordered table-sm align-middle" style={{ background: "#fff" }}>
-              <thead style={{ background: "#F3F6FF" }}>
-                <tr>
-                  <th style={{ width: 260, padding: "10px 12px" }}>Product</th>
-                  <th style={{ padding: "10px 12px" }}>Category</th>
-                  <th style={{ width: 120, padding: "10px 12px" }}>Qty</th>
-                  <th style={{ width: 140, padding: "10px 12px" }}>Reorder</th>
-                  <th style={{ width: 110, padding: "10px 12px" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inventory.map((row) => {
-                  const q = Number(row.quantity) || 0;
-                  const rl = Number(row.reorderLevel) || 0;
-                  const low = q <= rl;
-
-                  return (
-                    <tr key={row.id} style={low ? { background: "#FFF5F5" } : undefined}>
-                      <td className="fw-semibold" style={{ padding: "10px 12px" }}>
-                        {row.product?.name}
-                      </td>
-                      <td style={{ padding: "10px 12px" }}>{row.product?.category?.name || "-"}</td>
-                      <td style={{ padding: "10px 12px" }}>{q}</td>
-                      <td style={{ padding: "10px 12px" }}>{rl}</td>
-                      <td style={{ padding: "10px 12px" }}>
-                        {low ? (
-                          <span className="badge" style={{ background: "#FAD7DF", color: "#8A1731", fontSize: 12 }}>
-                            LOW
-                          </span>
-                        ) : (
-                          <span className="badge" style={{ background: "#DFF7E7", color: "#0C5B2B", fontSize: 12 }}>
-                            Available
-                          </span>
-                        )}
-                      </td>
+          <div className="card-body">
+            {loading ? (
+              <div className="text-muted">Loading inventory...</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-sm table-bordered table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th style={{ width: 130 }}>Code</th>
+                      <th style={{ minWidth: 220 }}>Product</th>
+                      <th style={{ minWidth: 150 }}>Category</th>
+                      <th style={{ width: 100 }}>Unit</th>
+                      <th style={{ width: 100 }}>Qty</th>
+                      <th style={{ width: 120 }}>Reorder</th>
+                      <th style={{ width: 150, textAlign: "center" }}>Status</th>
                     </tr>
-                  );
-                })}
+                  </thead>
 
-                {inventory.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="text-center text-muted" style={{ padding: 14 }}>
-                      No inventory records
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+                  <tbody>
+                    {inventory.map((row) => {
+                      const q = Number(row.quantity) || 0;
+                      const rl = Number(row.reorderLevel) || 0;
+                      const status = getStockStatus(q, rl);
+
+                      return (
+                        <tr key={row.id}>
+                          <td style={{ fontWeight: 800 }}>{row.product?.code || "-"}</td>
+                          <td style={{ fontWeight: 800 }}>{row.product?.name || "-"}</td>
+                          <td>{row.product?.category?.name || "-"}</td>
+                          <td>{row.product?.unit || "-"}</td>
+                          <td style={{ fontWeight: 900 }}>{q}</td>
+                          <td>{rl}</td>
+                          <td className="text-center">
+                            <span style={statusBadgeStyle(status.key)}>
+                              <i className={`bi ${status.icon}`}></i>
+                              {status.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {inventory.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center text-muted py-4">
+                          No inventory records found for this branch.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+              Low stock appears when quantity is equal to or below the reorder level.
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </>
+  );
+}
+
+function InfoPill({ label, value, bg, color, border }) {
+  return (
+    <span
+      style={{
+        background: bg,
+        color,
+        border: `1px solid ${border}`,
+        padding: "7px 11px",
+        borderRadius: 999,
+        fontWeight: 800,
+        fontSize: 13,
+        maxWidth: 280,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}: {value}
+    </span>
+  );
+}
+
+function SummaryCard({ title, value, icon, hint }) {
+  return (
+    <div className="col-12 col-sm-6 col-xl-3">
+      <div
+        className="p-3 h-100"
+        style={{
+          borderRadius: 16,
+          border: "1px solid rgba(148,163,184,.28)",
+          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          background: "rgba(255,255,255,.88)",
+        }}
+      >
+        <div className="d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+              {title}
+            </div>
+
+            <div style={{ fontSize: 26, fontWeight: 900, color: "#0F172A" }}>
+              {value}
+            </div>
+
+            <div className="text-muted" style={{ fontSize: 12 }}>
+              {hint}
+            </div>
+          </div>
+
+          <div
+            className="d-flex align-items-center justify-content-center"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: "rgba(219,234,254,.55)",
+              border: "1px solid rgba(147,197,253,.55)",
+              color: "#1D4ED8",
+              fontSize: 18,
+              flex: "0 0 auto",
+            }}
+          >
+            <i className={`bi ${icon}`}></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ title, value }) {
+  return (
+    <div className="col-6">
+      <div
+        className="p-2"
+        style={{
+          borderRadius: 14,
+          border: "1px solid rgba(148,163,184,.25)",
+          background: "rgba(248,250,252,.9)",
+        }}
+      >
+        <div className="text-muted" style={{ fontSize: 12, fontWeight: 700 }}>
+          {title}
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "#0F172A" }}>{value}</div>
+      </div>
+    </div>
   );
 }

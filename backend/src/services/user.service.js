@@ -1,3 +1,4 @@
+// backend/src/services/user.service.js
 import prisma from "../db/prisma.js";
 import ApiError from "../utils/ApiError.js";
 import bcrypt from "bcryptjs";
@@ -7,13 +8,43 @@ const nextCode = (prefix, lastNumber) => {
   return `${prefix}${String(n).padStart(3, "0")}`;
 };
 
+const userSelect = {
+  id: true,
+  code: true,
+  fullName: true,
+  email: true,
+  role: true,
+  branchId: true,
+  createdAt: true,
+  branch: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+    },
+  },
+};
+
 export const listUsers = async ({ role, branchId }) => {
   const where = {};
+
   if (role) where.role = role;
   if (branchId) where.branchId = branchId;
 
   return prisma.user.findMany({
     where,
+    select: userSelect,
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
+export const listRiders = async () => {
+  return prisma.user.findMany({
+    where: {
+      role: "DELIVERY_RIDER",
+    },
     select: {
       id: true,
       code: true,
@@ -21,10 +52,17 @@ export const listUsers = async ({ role, branchId }) => {
       email: true,
       role: true,
       branchId: true,
-      createdAt: true,
-      branch: { select: { id: true, code: true, name: true } },
+      branch: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+        },
+      },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: {
+      fullName: "asc",
+    },
   });
 };
 
@@ -41,16 +79,38 @@ export const createUser = async ({ fullName, email, password, role, branchId }) 
     throw new ApiError(400, "branchId is required for this role");
   }
 
-  const branch = await prisma.branch.findUnique({ where: { id: branchId } });
-  if (!branch) throw new ApiError(400, "Invalid branchId");
+  const branch = await prisma.branch.findUnique({
+    where: {
+      id: branchId,
+    },
+  });
 
-  const dup = await prisma.user.findUnique({ where: { email } });
-  if (dup) throw new ApiError(409, "Email already exists");
+  if (!branch) {
+    throw new ApiError(400, "Invalid branchId");
+  }
+
+  const dup = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (dup) {
+    throw new ApiError(409, "Email already exists");
+  }
 
   const last = await prisma.user.findFirst({
-    where: { code: { not: null } },
-    orderBy: { createdAt: "desc" },
-    select: { code: true },
+    where: {
+      code: {
+        not: null,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      code: true,
+    },
   });
 
   const lastNum = last?.code ? parseInt(String(last.code).replace("U", ""), 10) : 0;
@@ -67,22 +127,20 @@ export const createUser = async ({ fullName, email, password, role, branchId }) 
       role,
       branchId,
     },
-    select: {
-      id: true,
-      code: true,
-      fullName: true,
-      email: true,
-      role: true,
-      branchId: true,
-      createdAt: true,
-      branch: { select: { id: true, code: true, name: true } },
-    },
+    select: userSelect,
   });
 };
 
 export const updateUser = async (id, payload) => {
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new ApiError(404, "User not found");
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
   if (user.role === "SUPER_ADMIN") {
     throw new ApiError(400, "Cannot update SUPER_ADMIN");
@@ -107,33 +165,44 @@ export const updateUser = async (id, payload) => {
   }
 
   if (data.branchId) {
-    const branch = await prisma.branch.findUnique({ where: { id: data.branchId } });
-    if (!branch) throw new ApiError(400, "Invalid branchId");
+    const branch = await prisma.branch.findUnique({
+      where: {
+        id: data.branchId,
+      },
+    });
+
+    if (!branch) {
+      throw new ApiError(400, "Invalid branchId");
+    }
   }
 
   return prisma.user.update({
-    where: { id },
-    data,
-    select: {
-      id: true,
-      code: true,
-      fullName: true,
-      email: true,
-      role: true,
-      branchId: true,
-      createdAt: true,
-      branch: { select: { id: true, code: true, name: true } },
+    where: {
+      id,
     },
+    data,
+    select: userSelect,
   });
 };
 
-// ✅ NEW: reset password (cannot reset SUPER_ADMIN)
 export const resetUserPassword = async (id, { newPassword }, adminUser) => {
-  if (!newPassword) throw new ApiError(400, "newPassword is required");
-  if (String(newPassword).length < 6) throw new ApiError(400, "newPassword must be at least 6 characters");
+  if (!newPassword) {
+    throw new ApiError(400, "newPassword is required");
+  }
 
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new ApiError(404, "User not found");
+  if (String(newPassword).length < 6) {
+    throw new ApiError(400, "newPassword must be at least 6 characters");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
   if (user.role === "SUPER_ADMIN") {
     throw new ApiError(400, "Cannot reset SUPER_ADMIN password");
@@ -142,11 +211,14 @@ export const resetUserPassword = async (id, { newPassword }, adminUser) => {
   const hash = await bcrypt.hash(newPassword, 10);
 
   await prisma.user.update({
-    where: { id },
-    data: { password: hash },
+    where: {
+      id,
+    },
+    data: {
+      password: hash,
+    },
   });
 
-  // Optional audit trail via notification (keep it general; don't store password)
   await prisma.notification.create({
     data: {
       type: "GENERAL",
@@ -164,11 +236,25 @@ export const resetUserPassword = async (id, { newPassword }, adminUser) => {
 };
 
 export const deleteUser = async (id) => {
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) throw new ApiError(404, "User not found");
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
 
-  if (user.role === "SUPER_ADMIN") throw new ApiError(400, "Cannot delete SUPER_ADMIN");
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
-  await prisma.user.delete({ where: { id } });
+  if (user.role === "SUPER_ADMIN") {
+    throw new ApiError(400, "Cannot delete SUPER_ADMIN");
+  }
+
+  await prisma.user.delete({
+    where: {
+      id,
+    },
+  });
+
   return null;
 };

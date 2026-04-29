@@ -4,6 +4,34 @@ import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import NavBar from "../components/NavBar";
 
+const statusBadgeStyle = (active) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "6px 10px",
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 800,
+  border: active ? "1px solid #A7F3D0" : "1px solid #E5E7EB",
+  background: active ? "#ECFDF5" : "#F3F4F6",
+  color: active ? "#047857" : "#4B5563",
+  whiteSpace: "nowrap",
+});
+
+const smallActionBtnStyle = {
+  borderRadius: 9,
+  fontWeight: 700,
+  padding: "5px 10px",
+  fontSize: 13,
+  lineHeight: 1.25,
+  whiteSpace: "nowrap",
+};
+
+const toggleBtnStyle = {
+  ...smallActionBtnStyle,
+  minWidth: 96,
+};
+
 export default function Branches() {
   const navigate = useNavigate();
 
@@ -12,13 +40,11 @@ export default function Branches() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
 
-  // Create form
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
-  // Edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState("");
   const [eName, setEName] = useState("");
@@ -27,27 +53,42 @@ export default function Branches() {
   const [eLng, setELng] = useState("");
   const [eActive, setEActive] = useState(true);
 
-  useMemo(() => {
-    const m = new Map();
-    branches.forEach((b) => m.set(b.id, b));
-    return m;
+  const summary = useMemo(() => {
+    const active = branches.filter((b) => b.isActive !== false).length;
+    const inactive = branches.length - active;
+
+    return {
+      total: branches.length,
+      active,
+      inactive,
+    };
   }, [branches]);
+
+  const handleUnauthorized = (msg) => {
+    if (String(msg || "").toLowerCase().includes("unauthorized")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("fullName");
+      localStorage.removeItem("branchId");
+      navigate("/login");
+      return true;
+    }
+
+    return false;
+  };
 
   const fetchBranches = async () => {
     setError("");
     setLoading(true);
+
     try {
       const res = await client.get("/branches");
-      setBranches(res.data?.data || []);
+      const data = res.data?.data || [];
+      setBranches(data);
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load branches";
       setError(msg);
-      if (msg.toLowerCase().includes("unauthorized")) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        localStorage.removeItem("fullName");
-        navigate("/login");
-      }
+      handleUnauthorized(msg);
     } finally {
       setLoading(false);
     }
@@ -74,7 +115,7 @@ export default function Branches() {
       setAddress("");
       setLatitude("");
       setLongitude("");
-      fetchBranches();
+      await fetchBranches();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create branch");
     }
@@ -113,7 +154,7 @@ export default function Branches() {
 
       setEditOpen(false);
       setEditId("");
-      fetchBranches();
+      await fetchBranches();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update branch");
     } finally {
@@ -124,11 +165,12 @@ export default function Branches() {
   const toggleActive = async (b) => {
     setError("");
     setBusyId(b.id);
+
     const next = !(b.isActive !== false);
 
     try {
       await client.put(`/branches/${b.id}`, { isActive: next });
-      fetchBranches();
+      await fetchBranches();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update status");
     } finally {
@@ -136,40 +178,120 @@ export default function Branches() {
     }
   };
 
+  const pageWrapStyle = {
+    marginTop: 18,
+    paddingBottom: 26,
+  };
+
+  const panelStyle = {
+    borderRadius: 18,
+    border: "1px solid rgba(148,163,184,.35)",
+    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    overflow: "hidden",
+  };
+
+  const headerCardStyle = {
+    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.25)",
+  };
+
+  const inputStyle = {
+    borderRadius: 12,
+  };
+
   return (
     <>
       <NavBar />
 
-      <div className="container" style={{ marginTop: 28, marginBottom: 40 }}>
-        <div className="mb-3">
-          <h2 className="m-0 text-center" style={{ fontWeight: 800 }}>
-            Branches
-          </h2>
-          <div
-            className="text-center text-muted"
-            style={{ fontSize: 13, marginTop: 6 }}
-          >
-            Create, edit, activate/deactivate branches
+      <div className="container-fluid px-4" style={pageWrapStyle}>
+        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+          <div>
+            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+              Branches
+            </h2>
+            <div className="text-muted" style={{ marginTop: 4 }}>
+              Manage branch locations, operational status, and geographic details.
+            </div>
           </div>
+
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            style={{
+              borderRadius: 10,
+              fontWeight: 700,
+              padding: "8px 14px",
+              background: "rgba(255,255,255,.85)",
+            }}
+            onClick={fetchBranches}
+            disabled={loading}
+            title="Refresh"
+          >
+            <i className="bi bi-arrow-clockwise me-1"></i>
+            Refresh
+          </button>
         </div>
 
-        {error ? <div className="alert alert-danger">{error}</div> : null}
+        {error ? (
+          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+            {error}
+          </div>
+        ) : null}
 
-        {/* Create */}
-        <div className="card mb-4" style={{ borderRadius: 14 }}>
+        <div className="row g-3 mb-4">
+          <SummaryCard
+            title="Total Branches"
+            value={summary.total}
+            icon="bi-building"
+            hint="All registered locations"
+          />
+          <SummaryCard
+            title="Active"
+            value={summary.active}
+            icon="bi-check-circle"
+            hint="Available for operations"
+          />
+          <SummaryCard
+            title="Inactive"
+            value={summary.inactive}
+            icon="bi-pause-circle"
+            hint="Temporarily disabled"
+          />
+        </div>
+
+        <div className="card mb-4" style={panelStyle}>
+          <div className="card-body" style={headerCardStyle}>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                  Create Branch
+                </div>
+                <div className="text-muted" style={{ fontSize: 13 }}>
+                  Add a new branch with address and optional map coordinates.
+                </div>
+              </div>
+
+              <span
+                className="text-muted"
+                style={{
+                  fontSize: 12,
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(148,163,184,.35)",
+                  background: "rgba(255,255,255,.85)",
+                }}
+              >
+                Auto code generated
+              </span>
+            </div>
+          </div>
+
           <div className="card-body">
-            <h6 className="card-title" style={{ fontWeight: 800 }}>
-              Create Branch
-            </h6>
-
-            {/* key changes:
-                - use col-lg for better fit (button stays on same row)
-                - give button column enough width (col-lg-2) */}
             <form onSubmit={createBranch} className="row g-2 align-items-end">
-              <div className="col-12 col-lg-3">
-                <label className="form-label mb-1">Name</label>
+              <div className="col-12 col-xl-3">
+                <label className="form-label small text-muted mb-1">Name</label>
                 <input
                   className="form-control"
+                  style={inputStyle}
                   placeholder="Head Office"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -177,10 +299,11 @@ export default function Branches() {
                 />
               </div>
 
-              <div className="col-12 col-lg-3">
-                <label className="form-label mb-1">Address</label>
+              <div className="col-12 col-xl-3">
+                <label className="form-label small text-muted mb-1">Address</label>
                 <input
                   className="form-control"
+                  style={inputStyle}
                   placeholder="Uttara, Dhaka"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -188,36 +311,39 @@ export default function Branches() {
                 />
               </div>
 
-              <div className="col-6 col-lg-2">
-                <label className="form-label mb-1">Latitude</label>
+              <div className="col-6 col-xl-2">
+                <label className="form-label small text-muted mb-1">Latitude</label>
                 <input
                   className="form-control"
+                  style={inputStyle}
                   placeholder="23.8103"
                   value={latitude}
                   onChange={(e) => setLatitude(e.target.value)}
                 />
               </div>
 
-              <div className="col-6 col-lg-2">
-                <label className="form-label mb-1">Longitude</label>
+              <div className="col-6 col-xl-2">
+                <label className="form-label small text-muted mb-1">Longitude</label>
                 <input
                   className="form-control"
+                  style={inputStyle}
                   placeholder="90.4125"
                   value={longitude}
                   onChange={(e) => setLongitude(e.target.value)}
                 />
               </div>
 
-              <div className="col-12 col-lg-2 d-grid">
+              <div className="col-12 col-xl-2 d-grid">
                 <button
                   className="btn btn-primary"
                   style={{
                     borderRadius: 12,
                     fontWeight: 800,
+                    padding: "10px 12px",
                     whiteSpace: "nowrap",
-                    paddingInline: 18,
                   }}
                 >
+                  <i className="bi bi-plus-circle me-1"></i>
                   Create
                 </button>
               </div>
@@ -225,125 +351,168 @@ export default function Branches() {
           </div>
         </div>
 
-        {/* List */}
-        {loading ? (
-          <div className="text-muted">Loading...</div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table table-bordered align-middle">
-              <thead style={{ background: "#F3F6FF" }}>
-                <tr>
-                  <th style={{ width: 90 }}>Code</th>
-                  <th>Name</th>
-                  <th>Address</th>
-                  <th style={{ width: 120 }}>Latitude</th>
-                  <th style={{ width: 120 }}>Longitude</th>
-                  <th style={{ width: 120 }}>Status</th>
+        <div className="card" style={panelStyle}>
+          <div className="card-body" style={headerCardStyle}>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                Branch List
+              </div>
 
-                  {/* Action header centered */}
-                  <th style={{ width: 240 }} className="text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {branches.map((b) => {
-                  const active = b.isActive !== false;
-                  return (
-                    <tr
-                      key={b.id}
-                      style={!active ? { background: "#fafafa" } : undefined}
-                    >
-                      <td>{b.code || "-"}</td>
-                      <td style={{ fontWeight: 700 }}>{b.name}</td>
-                      <td>{b.address}</td>
-                      <td>{b.latitude ?? "-"}</td>
-                      <td>{b.longitude ?? "-"}</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            active ? "text-bg-success" : "text-bg-secondary"
-                          }`}
-                        >
-                          {active ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-
-                      {/* Action cell centered */}
-                      <td className="text-center">
-                        <div className="d-inline-flex gap-2">
-                          <button
-                            className="btn btn-sm btn-outline-primary"
-                            style={{ borderRadius: 10 }}
-                            onClick={() => openEdit(b)}
-                            disabled={busyId === b.id}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            className={`btn btn-sm ${
-                              active
-                                ? "btn-outline-danger"
-                                : "btn-outline-success"
-                            }`}
-                            style={{ borderRadius: 10, minWidth: 98 }}
-                            onClick={() => toggleActive(b)}
-                            disabled={busyId === b.id}
-                          >
-                            {busyId === b.id
-                              ? "Working..."
-                              : active
-                              ? "Deactivate"
-                              : "Activate"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {branches.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="text-center text-muted">
-                      No branches found
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+              <div className="text-muted" style={{ fontSize: 13 }}>
+                {loading ? "Loading..." : `${branches.length} record(s)`}
+              </div>
+            </div>
           </div>
-        )}
+
+          <div className="card-body">
+            {loading ? (
+              <div className="text-muted">Loading branches...</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-bordered table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th style={{ width: 100 }}>Code</th>
+                      <th style={{ minWidth: 160 }}>Name</th>
+                      <th style={{ minWidth: 200 }}>Address</th>
+                      <th style={{ width: 125 }}>Latitude</th>
+                      <th style={{ width: 125 }}>Longitude</th>
+                      <th style={{ width: 130 }}>Status</th>
+                      <th style={{ width: 210, textAlign: "center" }}>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {branches.map((b) => {
+                      const active = b.isActive !== false;
+
+                      return (
+                        <tr
+                          key={b.id}
+                          style={
+                            !active
+                              ? {
+                                  background: "rgba(248,250,252,.75)",
+                                  color: "#64748B",
+                                }
+                              : undefined
+                          }
+                        >
+                          <td style={{ fontWeight: 800 }}>{b.code || "-"}</td>
+                          <td style={{ fontWeight: 800 }}>{b.name || "-"}</td>
+                          <td>{b.address || "-"}</td>
+                          <td>{b.latitude ?? "-"}</td>
+                          <td>{b.longitude ?? "-"}</td>
+                          <td>
+                            <span style={statusBadgeStyle(active)}>
+                              <i
+                                className={`bi ${
+                                  active ? "bi-check-circle" : "bi-pause-circle"
+                                }`}
+                              ></i>
+                              {active ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+
+                          <td className="text-center">
+                            <div className="d-inline-flex gap-2 justify-content-center align-items-center">
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                style={smallActionBtnStyle}
+                                onClick={() => openEdit(b)}
+                                disabled={busyId === b.id}
+                              >
+                                <i className="bi bi-pencil-square me-1"></i>
+                                Edit
+                              </button>
+
+                              <button
+                                className={`btn btn-sm ${
+                                  active ? "btn-outline-danger" : "btn-outline-success"
+                                }`}
+                                style={toggleBtnStyle}
+                                onClick={() => toggleActive(b)}
+                                disabled={busyId === b.id}
+                              >
+                                {busyId === b.id ? (
+                                  "Working..."
+                                ) : active ? (
+                                  <>
+                                    <i className="bi bi-slash-circle me-1"></i>
+                                    Deactivate
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="bi bi-check-circle me-1"></i>
+                                    Activate
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {branches.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center text-muted py-4">
+                          No branches found
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+              Inactive branches remain stored in the system but should not be used for new operations.
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* EDIT MODAL */}
       {editOpen ? (
         <>
-          <div
-            className="modal show"
-            style={{ display: "block" }}
-            tabIndex="-1"
-            role="dialog"
-          >
+          <div className="modal show" style={{ display: "block" }} tabIndex="-1" role="dialog">
             <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content" style={{ borderRadius: 14 }}>
+              <div
+                className="modal-content"
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(148,163,184,.35)",
+                  boxShadow: "0 18px 45px rgba(15,23,42,.16)",
+                  overflow: "hidden",
+                }}
+              >
                 <form onSubmit={saveEdit}>
-                  <div className="modal-header">
-                    <h5 className="modal-title">Edit Branch</h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={closeEdit}
-                    />
+                  <div
+                    className="modal-header"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(219,234,254,.65), rgba(255,255,255,1))",
+                    }}
+                  >
+                    <div>
+                      <h5 className="modal-title" style={{ fontWeight: 900 }}>
+                        Edit Branch
+                      </h5>
+                      <div className="text-muted" style={{ fontSize: 13 }}>
+                        Update branch details and operational status.
+                      </div>
+                    </div>
+
+                    <button type="button" className="btn-close" onClick={closeEdit} />
                   </div>
 
                   <div className="modal-body">
                     <div className="row g-3">
                       <div className="col-12">
-                        <label className="form-label">Name</label>
+                        <label className="form-label small text-muted mb-1">Name</label>
                         <input
                           className="form-control"
+                          style={inputStyle}
                           value={eName}
                           onChange={(e) => setEName(e.target.value)}
                           required
@@ -351,9 +520,10 @@ export default function Branches() {
                       </div>
 
                       <div className="col-12">
-                        <label className="form-label">Address</label>
+                        <label className="form-label small text-muted mb-1">Address</label>
                         <input
                           className="form-control"
+                          style={inputStyle}
                           value={eAddress}
                           onChange={(e) => setEAddress(e.target.value)}
                           required
@@ -361,42 +531,51 @@ export default function Branches() {
                       </div>
 
                       <div className="col-6">
-                        <label className="form-label">Latitude</label>
+                        <label className="form-label small text-muted mb-1">Latitude</label>
                         <input
                           className="form-control"
+                          style={inputStyle}
                           value={eLat}
                           onChange={(e) => setELat(e.target.value)}
                         />
                       </div>
 
                       <div className="col-6">
-                        <label className="form-label">Longitude</label>
+                        <label className="form-label small text-muted mb-1">Longitude</label>
                         <input
                           className="form-control"
+                          style={inputStyle}
                           value={eLng}
                           onChange={(e) => setELng(e.target.value)}
                         />
                       </div>
 
                       <div className="col-12">
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="branchActive"
-                            checked={eActive}
-                            onChange={(e) => setEActive(e.target.checked)}
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor="branchActive"
-                          >
-                            Active
-                          </label>
-                        </div>
-                        <div className="text-muted small mt-1">
-                          If inactive, this branch stays in the system but should
-                          not be used for operations.
+                        <div
+                          className="p-3"
+                          style={{
+                            borderRadius: 14,
+                            background: "rgba(248,250,252,.9)",
+                            border: "1px solid rgba(148,163,184,.25)",
+                          }}
+                        >
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="branchActive"
+                              checked={eActive}
+                              onChange={(e) => setEActive(e.target.checked)}
+                            />
+                            <label className="form-check-label fw-semibold" htmlFor="branchActive">
+                              Active branch
+                            </label>
+                          </div>
+
+                          <div className="text-muted small mt-1">
+                            If inactive, this branch remains saved but should not be used for new
+                            stock, order, or transfer operations.
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -406,13 +585,19 @@ export default function Branches() {
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
+                      style={{ borderRadius: 10, fontWeight: 700 }}
                       onClick={closeEdit}
                       disabled={!!busyId}
                     >
                       Cancel
                     </button>
-                    <button className="btn btn-primary" disabled={!!busyId}>
-                      {busyId ? "Saving..." : "Save"}
+
+                    <button
+                      className="btn btn-primary"
+                      style={{ borderRadius: 10, fontWeight: 800 }}
+                      disabled={!!busyId}
+                    >
+                      {busyId ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 </form>
@@ -424,5 +609,52 @@ export default function Branches() {
         </>
       ) : null}
     </>
+  );
+}
+
+function SummaryCard({ title, value, icon, hint }) {
+  return (
+    <div className="col-12 col-sm-6 col-xl-4">
+      <div
+        className="p-3 h-100"
+        style={{
+          borderRadius: 16,
+          border: "1px solid rgba(148,163,184,.28)",
+          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          background: "rgba(255,255,255,.88)",
+        }}
+      >
+        <div className="d-flex justify-content-between align-items-start">
+          <div>
+            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+              {title}
+            </div>
+
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#0F172A" }}>
+              {value}
+            </div>
+
+            <div className="text-muted" style={{ fontSize: 12 }}>
+              {hint}
+            </div>
+          </div>
+
+          <div
+            className="d-flex align-items-center justify-content-center"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: "rgba(219,234,254,.55)",
+              border: "1px solid rgba(147,197,253,.55)",
+              color: "#1D4ED8",
+              fontSize: 18,
+            }}
+          >
+            <i className={`bi ${icon}`}></i>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

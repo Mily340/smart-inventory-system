@@ -24,12 +24,33 @@ import Notifications from "./pages/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Role groups
-const ADMIN_STAFF = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"];
+const SUPER_ADMIN = ["SUPER_ADMIN"];
+const INVENTORY_OFFICER = ["INVENTORY_OFFICER"];
+const BRANCH_MANAGER = ["BRANCH_MANAGER"];
 const BRANCH_STAFF = ["BRANCH_STAFF"];
 const RIDER = ["DELIVERY_RIDER"];
 
-const ALL_LOGGED_IN = [...ADMIN_STAFF, ...BRANCH_STAFF, ...RIDER];
-const ADMIN_ONLY = ["SUPER_ADMIN"];
+// Full admin-level access
+const ADMIN_STAFF = [...SUPER_ADMIN, ...INVENTORY_OFFICER];
+
+// Branch-level operational access
+const BRANCH_OPERATION_USERS = [...BRANCH_MANAGER, ...BRANCH_STAFF];
+
+// Common operational pages
+const INVENTORY_ACCESS = [...ADMIN_STAFF, ...BRANCH_MANAGER];
+const BRANCH_STOCK_ACCESS = [...ADMIN_STAFF, ...BRANCH_OPERATION_USERS];
+const ORDER_ACCESS = [...ADMIN_STAFF, ...BRANCH_OPERATION_USERS];
+const TRANSFER_ACCESS = [...ADMIN_STAFF, ...BRANCH_MANAGER];
+const DELIVERY_ACCESS = [...RIDER, ...ADMIN_STAFF, ...BRANCH_MANAGER];
+const REPORT_ACCESS = [...ADMIN_STAFF, ...BRANCH_MANAGER];
+
+const ALL_LOGGED_IN = [
+  ...SUPER_ADMIN,
+  ...INVENTORY_OFFICER,
+  ...BRANCH_MANAGER,
+  ...BRANCH_STAFF,
+  ...RIDER,
+];
 
 export default function App() {
   return (
@@ -40,17 +61,17 @@ export default function App() {
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/catalog/:id" element={<CatalogProduct />} />
 
-        {/* Dashboard (Admin Staff) */}
+        {/* Dashboard */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
+            <ProtectedRoute allowedRoles={[...ADMIN_STAFF, ...BRANCH_MANAGER]}>
               <Dashboard />
             </ProtectedRoute>
           }
         />
 
-        {/* Admin Staff only */}
+        {/* Admin-level management pages */}
         <Route
           path="/branches"
           element={
@@ -59,6 +80,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/categories"
           element={
@@ -67,6 +89,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/products"
           element={
@@ -75,22 +98,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/inventory"
-          element={
-            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
-              <Inventory />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/transfers"
-          element={
-            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
-              <Transfers />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/distributors"
           element={
@@ -99,41 +107,58 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Branch-aware operational pages */}
         <Route
-          path="/reports"
+          path="/inventory"
           element={
-            <ProtectedRoute allowedRoles={ADMIN_STAFF}>
-              <Reports />
+            <ProtectedRoute allowedRoles={INVENTORY_ACCESS}>
+              <Inventory />
             </ProtectedRoute>
           }
         />
 
-        {/* Orders: Admin Staff + Branch Staff */}
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute allowedRoles={[...ADMIN_STAFF, ...BRANCH_STAFF]}>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Branch Stock: Admin Staff + Branch Staff */}
         <Route
           path="/branch-stock"
           element={
-            <ProtectedRoute allowedRoles={[...ADMIN_STAFF, ...BRANCH_STAFF]}>
+            <ProtectedRoute allowedRoles={BRANCH_STOCK_ACCESS}>
               <BranchStock />
             </ProtectedRoute>
           }
         />
 
-        {/* Deliveries: Rider + Admin Staff */}
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute allowedRoles={ORDER_ACCESS}>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/transfers"
+          element={
+            <ProtectedRoute allowedRoles={TRANSFER_ACCESS}>
+              <Transfers />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/deliveries"
           element={
-            <ProtectedRoute allowedRoles={[...RIDER, ...ADMIN_STAFF]}>
+            <ProtectedRoute allowedRoles={DELIVERY_ACCESS}>
               <Deliveries />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute allowedRoles={REPORT_ACCESS}>
+              <Reports />
             </ProtectedRoute>
           }
         />
@@ -142,7 +167,7 @@ export default function App() {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute allowedRoles={ADMIN_ONLY}>
+            <ProtectedRoute allowedRoles={SUPER_ADMIN}>
               <Users />
             </ProtectedRoute>
           }

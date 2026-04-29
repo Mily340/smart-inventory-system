@@ -1,10 +1,11 @@
+// frontend/src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
-import NavBar from "../components/NavBar";
 
 export default function Login() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("Admin123@");
   const [showPassword, setShowPassword] = useState(false);
@@ -12,11 +13,13 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const redirectByRole = (role) => {
-  if (role === "SUPER_ADMIN") return "/dashboard";
-  if (role === "DELIVERY_RIDER") return "/deliveries";
-  if (role === "BRANCH_STAFF") return "/orders";
-  return "/branches"; // BRANCH_MANAGER / INVENTORY_OFFICER
-};
+    if (role === "SUPER_ADMIN") return "/dashboard";
+    if (role === "BRANCH_MANAGER") return "/dashboard";
+    if (role === "INVENTORY_OFFICER") return "/dashboard";
+    if (role === "DELIVERY_RIDER") return "/deliveries";
+    if (role === "BRANCH_STAFF") return "/orders";
+    return "/login";
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -25,14 +28,18 @@ export default function Login() {
 
     try {
       const res = await client.post("/auth/login", { email, password });
+
       const token = res.data?.data?.token;
       const user = res.data?.data?.user;
 
-      if (!token) throw new Error("Token not found in response");
+      if (!token) {
+        throw new Error("Token not found in response");
+      }
 
       localStorage.setItem("token", token);
-      if (user?.role) localStorage.setItem("role", user.role);
-      if (user?.fullName) localStorage.setItem("fullName", user.fullName);
+      localStorage.setItem("role", user?.role || "");
+      localStorage.setItem("fullName", user?.fullName || "");
+      localStorage.setItem("branchId", user?.branchId || "");
 
       navigate(redirectByRole(user?.role), { replace: true });
     } catch (err) {
@@ -46,6 +53,7 @@ export default function Login() {
     <div className="container" style={{ maxWidth: 420, marginTop: 80 }}>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="m-0">Login</h4>
+
         <button
           type="button"
           className="btn btn-outline-secondary btn-sm"
@@ -60,6 +68,7 @@ export default function Login() {
       <form onSubmit={onSubmit}>
         <div className="mb-3">
           <label className="form-label">Email</label>
+
           <input
             className="form-control"
             value={email}
@@ -103,8 +112,6 @@ export default function Login() {
         <button className="btn btn-primary w-100" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
-
-        {/* Registration removed (no Register Request button) */}
       </form>
     </div>
   );

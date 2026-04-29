@@ -9,13 +9,25 @@ const nextCode = (prefix, lastNumber) => {
 };
 
 export const loginUser = async ({ email, password }) => {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new ApiError(401, "Invalid email or password");
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new ApiError(401, "Invalid email or password");
+  }
 
   const ok = await bcrypt.compare(password, user.password);
-  if (!ok) throw new ApiError(401, "Invalid email or password");
 
-  const token = signToken({ userId: user.id, role: user.role });
+  if (!ok) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  const token = signToken({
+    userId: user.id,
+    role: user.role,
+    branchId: user.branchId,
+  });
 
   return {
     token,
@@ -31,14 +43,22 @@ export const loginUser = async ({ email, password }) => {
 };
 
 export const registerUser = async ({ fullName, email, password, role, branchId }) => {
-  const exists = await prisma.user.findUnique({ where: { email } });
-  if (exists) throw new ApiError(409, "Email already exists");
+  const exists = await prisma.user.findUnique({
+    where: { email },
+  });
 
-  if (role !== "SUPER_ADMIN" && !branchId) {
-    throw new ApiError(400, "branchId is required for non-admin users");
+  if (exists) {
+    throw new ApiError(409, "Email already exists");
   }
 
-  // Generate next user code (U001, U002, ...)
+  if (role === "SUPER_ADMIN") {
+    throw new ApiError(400, "SUPER_ADMIN cannot be created from this route");
+  }
+
+  if (!branchId) {
+    throw new ApiError(400, "branchId is required for all non-super-admin users");
+  }
+
   const last = await prisma.user.findFirst({
     where: { code: { not: null } },
     orderBy: { createdAt: "desc" },
@@ -57,7 +77,7 @@ export const registerUser = async ({ fullName, email, password, role, branchId }
       email,
       password: hash,
       role,
-      branchId: role === "SUPER_ADMIN" ? null : branchId,
+      branchId,
     },
     select: {
       id: true,

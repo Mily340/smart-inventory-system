@@ -1,3 +1,4 @@
+// frontend/src/components/NavBar.jsx
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./NavBar.css";
@@ -13,39 +14,45 @@ export default function NavBar() {
   const role = localStorage.getItem("role") || "";
 
   const isLoggedIn = !!token;
-  const isRider = role === "DELIVERY_RIDER";
-  const isBranchStaff = role === "BRANCH_STAFF";
-  const isAdminStaff = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"].includes(role);
-  const isSuperAdmin = role === "SUPER_ADMIN";
 
-  // Don't show dashboard shell on public pages
+  const isSuperAdmin = role === "SUPER_ADMIN";
+  const isBranchManager = role === "BRANCH_MANAGER";
+  const isInventoryOfficer = role === "INVENTORY_OFFICER";
+  const isBranchStaff = role === "BRANCH_STAFF";
+  const isRider = role === "DELIVERY_RIDER";
+
+  // Admin-level menu users
+  // BRANCH_MANAGER is intentionally excluded here.
+  const isAdminStaff = isSuperAdmin || isInventoryOfficer;
+
   const isPublicCatalog = location.pathname.startsWith("/catalog");
   const isLoginPage = location.pathname === "/login";
   const shouldShowShell = isLoggedIn && !isPublicCatalog && !isLoginPage;
 
-  // Apply layout class to body
   useEffect(() => {
     if (shouldShowShell) document.body.classList.add("si-layout");
     else document.body.classList.remove("si-layout");
+
     return () => document.body.classList.remove("si-layout");
   }, [shouldShowShell]);
 
-  // Restore sidebar scroll on navigation (prevents jumping to top)
   useLayoutEffect(() => {
     if (!shouldShowShell) return;
+
     const el = sidebarRef.current;
     if (!el) return;
 
     const saved = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+
     if (saved != null) {
       const n = Number(saved);
       if (Number.isFinite(n)) el.scrollTop = n;
     }
   }, [location.pathname, shouldShowShell]);
 
-  // Save sidebar scroll continuously
   useEffect(() => {
     if (!shouldShowShell) return;
+
     const el = sidebarRef.current;
     if (!el) return;
 
@@ -54,6 +61,7 @@ export default function NavBar() {
     };
 
     el.addEventListener("scroll", onScroll, { passive: true });
+
     return () => el.removeEventListener("scroll", onScroll);
   }, [shouldShowShell]);
 
@@ -61,6 +69,7 @@ export default function NavBar() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("fullName");
+    localStorage.removeItem("branchId");
     sessionStorage.removeItem(SIDEBAR_SCROLL_KEY);
     navigate("/login");
   };
@@ -70,13 +79,30 @@ export default function NavBar() {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
-  const brandLink = isRider ? "/deliveries" : isBranchStaff ? "/orders" : "/dashboard";
+  const brandLink = isRider
+    ? "/deliveries"
+    : isBranchStaff
+    ? "/orders"
+    : isBranchManager
+    ? "/dashboard"
+    : "/dashboard";
+
+  const brandSub = isRider
+    ? "Delivery Panel"
+    : isBranchStaff
+    ? "Branch Panel"
+    : isBranchManager
+    ? "Branch Manager Panel"
+    : isSuperAdmin
+    ? "Admin Dashboard"
+    : isInventoryOfficer
+    ? "Inventory Panel"
+    : "Dashboard";
 
   if (!shouldShowShell) return null;
 
   return (
     <>
-      {/* Top bar */}
       <header className="si-topbar">
         <div className="si-topbar-inner">
           <div className="si-topbar-right">
@@ -88,11 +114,10 @@ export default function NavBar() {
         </div>
       </header>
 
-      {/* Sidebar */}
       <aside className="si-sidebar" ref={sidebarRef}>
         <Link to={brandLink} className="si-brand">
           <div className="si-brand-title">SMART INVENTORY</div>
-          <div className="si-brand-sub">Admin Dashboard</div>
+          <div className="si-brand-sub">{brandSub}</div>
         </Link>
 
         <nav className="si-nav">
@@ -107,15 +132,19 @@ export default function NavBar() {
               <Link className={`si-link ${isActive("/branches") ? "active" : ""}`} to="/branches">
                 Branches
               </Link>
+
               <Link className={`si-link ${isActive("/categories") ? "active" : ""}`} to="/categories">
                 Categories
               </Link>
+
               <Link className={`si-link ${isActive("/products") ? "active" : ""}`} to="/products">
                 Products
               </Link>
+
               <Link className={`si-link ${isActive("/inventory") ? "active" : ""}`} to="/inventory">
                 Inventory
               </Link>
+
               <Link className={`si-link ${isActive("/branch-stock") ? "active" : ""}`} to="/branch-stock">
                 Branch Stock
               </Link>
@@ -125,15 +154,19 @@ export default function NavBar() {
               <Link className={`si-link ${isActive("/transfers") ? "active" : ""}`} to="/transfers">
                 Transfers
               </Link>
+
               <Link className={`si-link ${isActive("/distributors") ? "active" : ""}`} to="/distributors">
                 Distributors
               </Link>
+
               <Link className={`si-link ${isActive("/orders") ? "active" : ""}`} to="/orders">
                 Orders
               </Link>
+
               <Link className={`si-link ${isActive("/deliveries") ? "active" : ""}`} to="/deliveries">
                 Deliveries
               </Link>
+
               <Link className={`si-link ${isActive("/reports") ? "active" : ""}`} to="/reports">
                 Reports
               </Link>
@@ -141,7 +174,11 @@ export default function NavBar() {
               {isSuperAdmin ? (
                 <>
                   <div className="si-nav-section">Admin</div>
-                  <Link className={`si-link ${isActive("/admin/users") ? "active" : ""}`} to="/admin/users">
+
+                  <Link
+                    className={`si-link ${isActive("/admin/users") ? "active" : ""}`}
+                    to="/admin/users"
+                  >
                     Users
                   </Link>
                 </>
@@ -149,12 +186,44 @@ export default function NavBar() {
             </>
           ) : null}
 
-          {isBranchStaff ? (
+          {isBranchManager ? (
             <>
-              <div className="si-nav-section">Branch</div>
+              <div className="si-nav-section">Branch Manager</div>
+
               <Link className={`si-link ${isActive("/branch-stock") ? "active" : ""}`} to="/branch-stock">
                 Branch Stock
               </Link>
+
+              <Link className={`si-link ${isActive("/inventory") ? "active" : ""}`} to="/inventory">
+                Inventory
+              </Link>
+
+              <Link className={`si-link ${isActive("/orders") ? "active" : ""}`} to="/orders">
+                Orders
+              </Link>
+
+              <Link className={`si-link ${isActive("/transfers") ? "active" : ""}`} to="/transfers">
+                Transfers
+              </Link>
+
+              <Link className={`si-link ${isActive("/deliveries") ? "active" : ""}`} to="/deliveries">
+                Deliveries
+              </Link>
+
+              <Link className={`si-link ${isActive("/reports") ? "active" : ""}`} to="/reports">
+                Reports
+              </Link>
+            </>
+          ) : null}
+
+          {isBranchStaff ? (
+            <>
+              <div className="si-nav-section">Branch</div>
+
+              <Link className={`si-link ${isActive("/branch-stock") ? "active" : ""}`} to="/branch-stock">
+                Branch Stock
+              </Link>
+
               <Link className={`si-link ${isActive("/orders") ? "active" : ""}`} to="/orders">
                 Orders
               </Link>
@@ -164,6 +233,7 @@ export default function NavBar() {
           {isRider ? (
             <>
               <div className="si-nav-section">Delivery</div>
+
               <Link className={`si-link ${isActive("/deliveries") ? "active" : ""}`} to="/deliveries">
                 Deliveries
               </Link>
@@ -171,6 +241,7 @@ export default function NavBar() {
           ) : null}
 
           <div className="si-nav-section">System</div>
+
           <Link className={`si-link ${isActive("/notifications") ? "active" : ""}`} to="/notifications">
             Notifications
           </Link>

@@ -99,17 +99,26 @@ export default function Orders() {
   const [error, setError] = useState("");
 
   const role = localStorage.getItem("role") || "";
+  const assignedBranchId = localStorage.getItem("branchId") || "";
+
+  const isSuperAdmin = role === "SUPER_ADMIN";
+  const isInventoryOfficer = role === "INVENTORY_OFFICER";
+  const isBranchManager = role === "BRANCH_MANAGER";
   const isBranchStaff = role === "BRANCH_STAFF";
-  const isAdminStaff = ["SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER"].includes(role);
+
+  const isBranchScoped = isBranchManager || isBranchStaff;
+  const canManageWorkflow = isSuperAdmin || isInventoryOfficer || isBranchManager;
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("fullName");
+      localStorage.removeItem("branchId");
       navigate("/login");
       return true;
     }
+
     return false;
   };
 
@@ -147,27 +156,55 @@ export default function Orders() {
     setLoading(true);
 
     try {
-      const [dRes, bRes, oRes] = await Promise.all([
-        client.get("/distributors"),
-        client.get("/branches"),
-        client.get("/orders"),
-      ]);
+      if (isBranchScoped && !assignedBranchId) {
+        setError("No branch is assigned to this account. Please contact the administrator.");
+        setOrders([]);
+        setStockItems([]);
+        setLoading(false);
+        return;
+      }
 
-      const d = dRes.data?.data || [];
-      const b = bRes.data?.data || [];
-      const o = oRes.data?.data || [];
+      const orderUrl = isBranchScoped ? "/orders" : branchId ? `/orders?branchId=${branchId}` : "/orders";
 
-      setDistributors(d);
-      setBranches(b);
-      setOrders(o);
+      if (isBranchScoped) {
+        const [dRes, oRes] = await Promise.all([client.get("/distributors"), client.get(orderUrl)]);
 
-      const nextDistributorId = distributorId || (d[0]?.id ?? "");
-      const nextBranchId = branchId || (b[0]?.id ?? "");
+        const d = dRes.data?.data || [];
+        const o = oRes.data?.data || [];
 
-      if (!distributorId && nextDistributorId) setDistributorId(nextDistributorId);
-      if (!branchId && nextBranchId) setBranchId(nextBranchId);
+        setDistributors(d);
+        setBranches([]);
+        setOrders(o);
 
-      if (nextBranchId) await fetchStockForBranch(nextBranchId);
+        if (!distributorId && d[0]?.id) {
+          setDistributorId(d[0].id);
+        }
+
+        setBranchId(assignedBranchId);
+        await fetchStockForBranch(assignedBranchId);
+      } else {
+        const [dRes, bRes, oRes] = await Promise.all([
+          client.get("/distributors"),
+          client.get("/branches"),
+          client.get(orderUrl),
+        ]);
+
+        const d = dRes.data?.data || [];
+        const b = bRes.data?.data || [];
+        const o = oRes.data?.data || [];
+
+        setDistributors(d);
+        setBranches(b);
+        setOrders(o);
+
+        const nextDistributorId = distributorId || (d[0]?.id ?? "");
+        const nextBranchId = branchId || (b[0]?.id ?? "");
+
+        if (!distributorId && nextDistributorId) setDistributorId(nextDistributorId);
+        if (!branchId && nextBranchId) setBranchId(nextBranchId);
+
+        if (nextBranchId) await fetchStockForBranch(nextBranchId);
+      }
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load orders";
       setError(msg);
@@ -178,6 +215,10 @@ export default function Orders() {
   };
 
   useEffect(() => {
+    if (isBranchScoped && assignedBranchId) {
+      setBranchId(assignedBranchId);
+    }
+
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -197,6 +238,18 @@ export default function Orders() {
 
   const availableQty = Number(selectedStock?.quantity ?? 0);
   const unitPrice = Number(selectedStock?.product?.price ?? 0);
+
+  const assignedBranchName = useMemo(() => {
+    if (!isBranchScoped) return "";
+
+    const fromOrders = orders.find((o) => o.branch?.id === assignedBranchId || o.branchId === assignedBranchId);
+    if (fromOrders?.branch?.name) return fromOrders.branch.name;
+
+    const fromStock = stockItems.find((it) => it.branch?.id === assignedBranchId || it.branchId === assignedBranchId);
+    if (fromStock?.branch?.name) return fromStock.branch.name;
+
+    return "Assigned Branch";
+  }, [assignedBranchId, isBranchScoped, orders, stockItems]);
 
   const qtyNum = useMemo(() => {
     const n = Number(quantity);
@@ -223,7 +276,9 @@ export default function Orders() {
     e.preventDefault();
     setError("");
 
-    if (!distributorId || !branchId || !productId) {
+    const finalBranchId = isBranchScoped ? assignedBranchId : branchId;
+
+    if (!distributorId || !finalBranchId || !productId) {
       setError("Please select distributor, branch and product.");
       return;
     }
@@ -241,7 +296,7 @@ export default function Orders() {
     try {
       await client.post("/orders", {
         distributorId,
-        branchId,
+        branchId: finalBranchId,
         items: [{ productId, quantity: qtyNum }],
       });
 
@@ -257,7 +312,7 @@ export default function Orders() {
 
     try {
       await client.patch(`/orders/${id}/status`, { status });
-      fetchAll();
+      await fetchAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update status");
     }
@@ -293,6 +348,10 @@ export default function Orders() {
         );
       }
 
+      return <span className="text-muted">—</span>;
+    }
+
+    if (!canManageWorkflow) {
       return <span className="text-muted">—</span>;
     }
 
@@ -393,14 +452,15 @@ export default function Orders() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        {/* Page header */}
         <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
           <div>
             <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Orders
             </h2>
             <div className="text-muted" style={{ marginTop: 4 }}>
-              Create orders using branch stock and track order workflow.
+              {isBranchScoped
+                ? "Manage orders for your assigned branch only."
+                : "Create orders using branch stock and track order workflow."}
             </div>
           </div>
 
@@ -427,7 +487,6 @@ export default function Orders() {
           </div>
         ) : null}
 
-        {/* Create panel */}
         <div className="card mb-4" style={panelStyle}>
           <div className="card-body" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -436,7 +495,9 @@ export default function Orders() {
                   Create Order
                 </div>
                 <div className="text-muted" style={{ fontSize: 13 }}>
-                  Select distributor, branch, product from stock, then quantity.
+                  {isBranchScoped
+                    ? "Branch is locked to your assigned branch."
+                    : "Select distributor, branch, product from stock, then quantity."}
                 </div>
               </div>
 
@@ -477,20 +538,35 @@ export default function Orders() {
 
               <div className="col-12 col-md-3">
                 <label className="form-label small text-muted mb-1">Branch</label>
-                <select
-                  className="form-select"
-                  style={{ borderRadius: 12 }}
-                  value={branchId}
-                  onChange={(e) => setBranchId(e.target.value)}
-                  required
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.code ? `${b.code} - ` : ""}
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+
+                {isBranchScoped ? (
+                  <div
+                    className="form-control"
+                    style={{
+                      borderRadius: 12,
+                      background: "#F8FAFC",
+                      color: "#0F172A",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {assignedBranchName}
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    style={{ borderRadius: 12 }}
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
+                    required
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code ? `${b.code} - ` : ""}
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="col-12 col-md-4">
@@ -541,6 +617,7 @@ export default function Orders() {
                   onChange={(e) => setQuantity(e.target.value)}
                   disabled={!productId || availableQty <= 0 || loadingStock}
                 />
+
                 {quantity && !qtyValid ? (
                   <div className="invalid-feedback">Max {availableQty}</div>
                 ) : null}
@@ -608,12 +685,11 @@ export default function Orders() {
           </div>
         </div>
 
-        {/* Orders table */}
         <div className="card" style={panelStyle}>
           <div className="card-body" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
-                Recent Orders
+                {isBranchScoped ? "Branch Orders" : "Recent Orders"}
               </div>
 
               <div className="text-muted" style={{ fontSize: 13 }}>
@@ -686,7 +762,9 @@ export default function Orders() {
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
               {isBranchStaff
                 ? "Branch Staff can create orders and cancel only PENDING orders."
-                : isAdminStaff
+                : isBranchManager
+                ? "Branch Manager can manage orders only for the assigned branch."
+                : canManageWorkflow
                 ? "Admin Staff can manage full order workflow: PENDING → APPROVED → PACKED → DISPATCHED → DELIVERED."
                 : null}
             </div>
