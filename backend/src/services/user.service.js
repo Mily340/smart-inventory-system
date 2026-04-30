@@ -25,6 +25,35 @@ const userSelect = {
   },
 };
 
+const checkBranchManagerLimit = async ({ branchId, excludeUserId }) => {
+  if (!branchId) {
+    throw new ApiError(400, "branchId is required for branch manager");
+  }
+
+  const existingManager = await prisma.user.findFirst({
+    where: {
+      role: "BRANCH_MANAGER",
+      branchId,
+      ...(excludeUserId
+        ? {
+            id: {
+              not: excludeUserId,
+            },
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  });
+
+  if (existingManager) {
+    throw new ApiError(400, "This branch already has a branch manager");
+  }
+};
+
 export const listUsers = async ({ role, branchId }) => {
   const where = {};
 
@@ -67,7 +96,10 @@ export const listRiders = async () => {
 };
 
 export const createUser = async ({ fullName, email, password, role, branchId }) => {
-  if (!fullName || !email || !password || !role) {
+  const cleanFullName = String(fullName || "").trim();
+  const cleanEmail = String(email || "").trim().toLowerCase();
+
+  if (!cleanFullName || !cleanEmail || !password || !role) {
     throw new ApiError(400, "fullName, email, password, role are required");
   }
 
@@ -91,12 +123,16 @@ export const createUser = async ({ fullName, email, password, role, branchId }) 
 
   const dup = await prisma.user.findUnique({
     where: {
-      email,
+      email: cleanEmail,
     },
   });
 
   if (dup) {
     throw new ApiError(409, "Email already exists");
+  }
+
+  if (role === "BRANCH_MANAGER") {
+    await checkBranchManagerLimit({ branchId });
   }
 
   const last = await prisma.user.findFirst({
@@ -114,15 +150,15 @@ export const createUser = async ({ fullName, email, password, role, branchId }) 
   });
 
   const lastNum = last?.code ? parseInt(String(last.code).replace("U", ""), 10) : 0;
-  const code = nextCode("U", lastNum);
+  const code = nextCode("U", Number.isNaN(lastNum) ? 0 : lastNum);
 
   const hash = await bcrypt.hash(password, 10);
 
   return prisma.user.create({
     data: {
       code,
-      fullName,
-      email,
+      fullName: cleanFullName,
+      email: cleanEmail,
       password: hash,
       role,
       branchId,
@@ -151,11 +187,22 @@ export const updateUser = async (id, payload) => {
     code: _ignoreCode,
     password: _ignorePassword,
     email: _ignoreEmail,
+    createdAt: _ignoreCreatedAt,
+    updatedAt: _ignoreUpdatedAt,
+    branch: _ignoreBranch,
     ...data
   } = payload;
 
   if (data.role === "SUPER_ADMIN") {
     throw new ApiError(400, "SUPER_ADMIN cannot be assigned");
+  }
+
+  if ("fullName" in data) {
+    data.fullName = String(data.fullName || "").trim();
+
+    if (!data.fullName) {
+      throw new ApiError(400, "fullName is required");
+    }
   }
 
   if (data.role && data.role !== "SUPER_ADMIN") {
@@ -174,6 +221,16 @@ export const updateUser = async (id, payload) => {
     if (!branch) {
       throw new ApiError(400, "Invalid branchId");
     }
+  }
+
+  const targetRole = data.role || user.role;
+  const targetBranchId = "branchId" in data ? data.branchId : user.branchId;
+
+  if (targetRole === "BRANCH_MANAGER") {
+    await checkBranchManagerLimit({
+      branchId: targetBranchId,
+      excludeUserId: id,
+    });
   }
 
   return prisma.user.update({

@@ -1,10 +1,11 @@
+// frontend/src/api/client.js
 import axios from "axios";
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1",
 });
 
-// ✅ do not send token for public endpoints
+// Do not send token for public endpoints
 const isPublicUrl = (url = "") =>
   url.startsWith("/public") ||
   url.startsWith("/branches/public") ||
@@ -13,9 +14,11 @@ const isPublicUrl = (url = "") =>
 
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+
   if (token && config.url && !isPublicUrl(config.url)) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
@@ -25,13 +28,16 @@ client.interceptors.response.use(
     const status = err?.response?.status;
     const url = err?.config?.url || "";
 
-    // ✅ only force logout for protected endpoints
+    // Only force logout for protected endpoints
     if (status === 401 && !isPublicUrl(url)) {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("fullName");
+      localStorage.removeItem("branchId");
+
       window.location.href = "/login";
     }
+
     return Promise.reject(err);
   }
 );
