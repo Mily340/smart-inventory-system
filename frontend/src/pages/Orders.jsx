@@ -164,10 +164,18 @@ export default function Orders() {
         return;
       }
 
-      const orderUrl = isBranchScoped ? "/orders" : branchId ? `/orders?branchId=${branchId}` : "/orders";
+      /*
+        Important:
+        The order table should always show the full accessible order list.
+        The selected branch is only used for creating an order and loading branch stock.
+      */
+      const orderUrl = "/orders";
 
       if (isBranchScoped) {
-        const [dRes, oRes] = await Promise.all([client.get("/distributors"), client.get(orderUrl)]);
+        const [dRes, oRes] = await Promise.all([
+          client.get("/distributors"),
+          client.get(orderUrl),
+        ]);
 
         const d = dRes.data?.data || [];
         const o = oRes.data?.data || [];
@@ -242,10 +250,16 @@ export default function Orders() {
   const assignedBranchName = useMemo(() => {
     if (!isBranchScoped) return "";
 
-    const fromOrders = orders.find((o) => o.branch?.id === assignedBranchId || o.branchId === assignedBranchId);
+    const fromOrders = orders.find(
+      (o) => o.branch?.id === assignedBranchId || o.branchId === assignedBranchId
+    );
+
     if (fromOrders?.branch?.name) return fromOrders.branch.name;
 
-    const fromStock = stockItems.find((it) => it.branch?.id === assignedBranchId || it.branchId === assignedBranchId);
+    const fromStock = stockItems.find(
+      (it) => it.branch?.id === assignedBranchId || it.branchId === assignedBranchId
+    );
+
     if (fromStock?.branch?.name) return fromStock.branch.name;
 
     return "Assigned Branch";
@@ -474,7 +488,7 @@ export default function Orders() {
             }}
             onClick={fetchAll}
             disabled={loading}
-            title="Refresh"
+            title="Refresh full order list"
           >
             <i className="bi bi-arrow-clockwise me-1"></i>
             Refresh
@@ -689,7 +703,7 @@ export default function Orders() {
           <div className="card-body" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
-                {isBranchScoped ? "Branch Orders" : "Recent Orders"}
+                {isBranchScoped ? "Branch Orders" : "Order List"}
               </div>
 
               <div className="text-muted" style={{ fontSize: 13 }}>
