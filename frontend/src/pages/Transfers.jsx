@@ -535,7 +535,7 @@ export default function Transfers() {
                 <table className="table table-bordered table-hover align-middle">
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 120 }}>ID</th>
+                      <th style={{ width: 90, textAlign: "center" }}>ID</th>
                       <th style={{ minWidth: 170 }}>Request From</th>
                       <th style={{ minWidth: 170 }}>Request To</th>
                       <th style={{ width: 130 }}>Status</th>
@@ -545,10 +545,17 @@ export default function Transfers() {
                   </thead>
 
                   <tbody>
-                    {transfers.map((t) => (
+                    {transfers.map((t, index) => (
                       <tr key={t.id}>
-                        <td style={{ maxWidth: 120, fontWeight: 800 }} className="text-truncate">
-                          {t.id}
+                        <td
+                          style={{
+                            width: 90,
+                            fontWeight: 900,
+                            textAlign: "center",
+                            color: "#0F172A",
+                          }}
+                        >
+                          {String(index + 1).padStart(2, "0")}
                         </td>
 
                         <td>
