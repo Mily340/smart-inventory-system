@@ -12,6 +12,7 @@ export default function NavBar() {
 
   const token = sessionStorage.getItem("token");
   const role = sessionStorage.getItem("role") || "";
+  const branchIsActive = sessionStorage.getItem("branchIsActive");
 
   const isLoggedIn = !!token;
 
@@ -25,7 +26,10 @@ export default function NavBar() {
 
   const isPublicCatalog = location.pathname.startsWith("/catalog");
   const isLoginPage = location.pathname === "/login";
-  const shouldShowShell = isLoggedIn && !isPublicCatalog && !isLoginPage;
+  const isInactivePage = location.pathname === "/branch-inactive";
+
+  const shouldShowShell =
+    isLoggedIn && !isPublicCatalog && !isLoginPage && !isInactivePage && branchIsActive !== "false";
 
   useEffect(() => {
     if (shouldShowShell) document.body.classList.add("si-layout");
@@ -68,14 +72,18 @@ export default function NavBar() {
     sessionStorage.removeItem("role");
     sessionStorage.removeItem("fullName");
     sessionStorage.removeItem("branchId");
+    sessionStorage.removeItem("branchName");
+    sessionStorage.removeItem("branchIsActive");
     sessionStorage.removeItem(SIDEBAR_SCROLL_KEY);
 
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("fullName");
     localStorage.removeItem("branchId");
+    localStorage.removeItem("branchName");
+    localStorage.removeItem("branchIsActive");
 
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const isActive = (path) => {

@@ -20,23 +20,19 @@ import Orders from "./pages/Orders";
 import Deliveries from "./pages/Deliveries";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
+import BranchInactive from "./pages/BranchInactive";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Role groups
 const SUPER_ADMIN = ["SUPER_ADMIN"];
 const INVENTORY_OFFICER = ["INVENTORY_OFFICER"];
 const BRANCH_MANAGER = ["BRANCH_MANAGER"];
 const BRANCH_STAFF = ["BRANCH_STAFF"];
 const RIDER = ["DELIVERY_RIDER"];
 
-// Full admin-level access
 const ADMIN_STAFF = [...SUPER_ADMIN, ...INVENTORY_OFFICER];
-
-// Branch-level operational access
 const BRANCH_OPERATION_USERS = [...BRANCH_MANAGER, ...BRANCH_STAFF];
 
-// Common operational pages
 const INVENTORY_ACCESS = [...ADMIN_STAFF, ...BRANCH_MANAGER];
 const BRANCH_STOCK_ACCESS = [...ADMIN_STAFF, ...BRANCH_OPERATION_USERS];
 const ORDER_ACCESS = [...ADMIN_STAFF, ...BRANCH_OPERATION_USERS];
@@ -60,6 +56,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/catalog/:id" element={<CatalogProduct />} />
+
+        {/* Inactive branch notice */}
+        <Route
+          path="/branch-inactive"
+          element={
+            <ProtectedRoute allowedRoles={[...BRANCH_MANAGER, ...BRANCH_STAFF]}>
+              <BranchInactive />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Dashboard */}
         <Route

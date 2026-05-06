@@ -29,7 +29,7 @@ const smallActionBtnStyle = {
 
 const toggleBtnStyle = {
   ...smallActionBtnStyle,
-  minWidth: 96,
+  minWidth: 112,
 };
 
 export default function Branches() {
@@ -64,13 +64,29 @@ export default function Branches() {
     };
   }, [branches]);
 
+  const clearAuthAndRedirect = () => {
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("fullName");
+    sessionStorage.removeItem("branchId");
+    sessionStorage.removeItem("branchName");
+    sessionStorage.removeItem("branchIsActive");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("fullName");
+    localStorage.removeItem("branchId");
+    localStorage.removeItem("branchName");
+    localStorage.removeItem("branchIsActive");
+
+    navigate("/login", { replace: true });
+  };
+
   const handleUnauthorized = (msg) => {
-    if (String(msg || "").toLowerCase().includes("unauthorized")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("branchId");
-      navigate("/login");
+    const text = String(msg || "").toLowerCase();
+
+    if (text.includes("unauthorized") || text.includes("invalid or expired token")) {
+      clearAuthAndRedirect();
       return true;
     }
 
@@ -103,12 +119,20 @@ export default function Branches() {
     e.preventDefault();
     setError("");
 
+    const lat = latitude === "" ? null : Number(latitude);
+    const lng = longitude === "" ? null : Number(longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setError("Valid latitude and longitude are required.");
+      return;
+    }
+
     try {
       await client.post("/branches", {
         name: name.trim(),
         address: address.trim(),
-        latitude: latitude === "" ? null : Number(latitude),
-        longitude: longitude === "" ? null : Number(longitude),
+        latitude: lat,
+        longitude: lng,
       });
 
       setName("");
@@ -143,12 +167,21 @@ export default function Branches() {
     setError("");
     setBusyId(editId);
 
+    const lat = eLat === "" ? null : Number(eLat);
+    const lng = eLng === "" ? null : Number(eLng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setError("Valid latitude and longitude are required.");
+      setBusyId("");
+      return;
+    }
+
     try {
       await client.put(`/branches/${editId}`, {
         name: eName.trim(),
         address: eAddress.trim(),
-        latitude: eLat === "" ? null : Number(eLat),
-        longitude: eLng === "" ? null : Number(eLng),
+        latitude: lat,
+        longitude: lng,
         isActive: !!eActive,
       });
 
@@ -166,13 +199,16 @@ export default function Branches() {
     setError("");
     setBusyId(b.id);
 
-    const next = !(b.isActive !== false);
+    const active = b.isActive !== false;
+    const endpoint = active
+      ? `/branches/${b.id}/deactivate`
+      : `/branches/${b.id}/activate`;
 
     try {
-      await client.put(`/branches/${b.id}`, { isActive: next });
+      await client.patch(endpoint);
       await fetchBranches();
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to update status");
+      setError(err?.response?.data?.message || "Failed to update branch status");
     } finally {
       setBusyId("");
     }
@@ -244,12 +280,14 @@ export default function Branches() {
             icon="bi-building"
             hint="All registered locations"
           />
+
           <SummaryCard
             title="Active"
             value={summary.active}
             icon="bi-check-circle"
             hint="Available for operations"
           />
+
           <SummaryCard
             title="Inactive"
             value={summary.inactive}
@@ -266,7 +304,7 @@ export default function Branches() {
                   Create Branch
                 </div>
                 <div className="text-muted" style={{ fontSize: 13 }}>
-                  Add a new branch with address and optional map coordinates.
+                  Add a new branch with address and map coordinates.
                 </div>
               </div>
 
@@ -288,8 +326,13 @@ export default function Branches() {
           <div className="card-body">
             <form onSubmit={createBranch} className="row g-2 align-items-end">
               <div className="col-12 col-xl-3">
-                <label className="form-label small text-muted mb-1">Name</label>
+                <label className="form-label small text-muted mb-1" htmlFor="branchName">
+                  Name
+                </label>
+
                 <input
+                  id="branchName"
+                  name="branchName"
                   className="form-control"
                   style={inputStyle}
                   placeholder="Head Office"
@@ -300,8 +343,13 @@ export default function Branches() {
               </div>
 
               <div className="col-12 col-xl-3">
-                <label className="form-label small text-muted mb-1">Address</label>
+                <label className="form-label small text-muted mb-1" htmlFor="branchAddress">
+                  Address
+                </label>
+
                 <input
+                  id="branchAddress"
+                  name="branchAddress"
                   className="form-control"
                   style={inputStyle}
                   placeholder="Uttara, Dhaka"
@@ -312,24 +360,36 @@ export default function Branches() {
               </div>
 
               <div className="col-6 col-xl-2">
-                <label className="form-label small text-muted mb-1">Latitude</label>
+                <label className="form-label small text-muted mb-1" htmlFor="branchLatitude">
+                  Latitude
+                </label>
+
                 <input
+                  id="branchLatitude"
+                  name="branchLatitude"
                   className="form-control"
                   style={inputStyle}
                   placeholder="23.8103"
                   value={latitude}
                   onChange={(e) => setLatitude(e.target.value)}
+                  required
                 />
               </div>
 
               <div className="col-6 col-xl-2">
-                <label className="form-label small text-muted mb-1">Longitude</label>
+                <label className="form-label small text-muted mb-1" htmlFor="branchLongitude">
+                  Longitude
+                </label>
+
                 <input
+                  id="branchLongitude"
+                  name="branchLongitude"
                   className="form-control"
                   style={inputStyle}
                   placeholder="90.4125"
                   value={longitude}
                   onChange={(e) => setLongitude(e.target.value)}
+                  required
                 />
               </div>
 
@@ -378,7 +438,7 @@ export default function Branches() {
                       <th style={{ width: 125 }}>Latitude</th>
                       <th style={{ width: 125 }}>Longitude</th>
                       <th style={{ width: 130 }}>Status</th>
-                      <th style={{ width: 210, textAlign: "center" }}>Actions</th>
+                      <th style={{ width: 235, textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -403,6 +463,7 @@ export default function Branches() {
                           <td>{b.address || "-"}</td>
                           <td>{b.latitude ?? "-"}</td>
                           <td>{b.longitude ?? "-"}</td>
+
                           <td>
                             <span style={statusBadgeStyle(active)}>
                               <i
@@ -433,6 +494,11 @@ export default function Branches() {
                                 style={toggleBtnStyle}
                                 onClick={() => toggleActive(b)}
                                 disabled={busyId === b.id}
+                                title={
+                                  active
+                                    ? "Deactivate this branch"
+                                    : "Activate this branch"
+                                }
                               >
                                 {busyId === b.id ? (
                                   "Working..."
@@ -467,7 +533,8 @@ export default function Branches() {
             )}
 
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              Inactive branches remain stored in the system but should not be used for new operations.
+              Inactive branches remain stored in the system. Assigned Branch Managers
+              and Branch Staff cannot access operational pages while their branch is inactive.
             </div>
           </div>
         </div>
@@ -498,6 +565,7 @@ export default function Branches() {
                       <h5 className="modal-title" style={{ fontWeight: 900 }}>
                         Edit Branch
                       </h5>
+
                       <div className="text-muted" style={{ fontSize: 13 }}>
                         Update branch details and operational status.
                       </div>
@@ -509,8 +577,13 @@ export default function Branches() {
                   <div className="modal-body">
                     <div className="row g-3">
                       <div className="col-12">
-                        <label className="form-label small text-muted mb-1">Name</label>
+                        <label className="form-label small text-muted mb-1" htmlFor="editBranchName">
+                          Name
+                        </label>
+
                         <input
+                          id="editBranchName"
+                          name="editBranchName"
                           className="form-control"
                           style={inputStyle}
                           value={eName}
@@ -520,8 +593,13 @@ export default function Branches() {
                       </div>
 
                       <div className="col-12">
-                        <label className="form-label small text-muted mb-1">Address</label>
+                        <label className="form-label small text-muted mb-1" htmlFor="editBranchAddress">
+                          Address
+                        </label>
+
                         <input
+                          id="editBranchAddress"
+                          name="editBranchAddress"
                           className="form-control"
                           style={inputStyle}
                           value={eAddress}
@@ -531,22 +609,34 @@ export default function Branches() {
                       </div>
 
                       <div className="col-6">
-                        <label className="form-label small text-muted mb-1">Latitude</label>
+                        <label className="form-label small text-muted mb-1" htmlFor="editBranchLatitude">
+                          Latitude
+                        </label>
+
                         <input
+                          id="editBranchLatitude"
+                          name="editBranchLatitude"
                           className="form-control"
                           style={inputStyle}
                           value={eLat}
                           onChange={(e) => setELat(e.target.value)}
+                          required
                         />
                       </div>
 
                       <div className="col-6">
-                        <label className="form-label small text-muted mb-1">Longitude</label>
+                        <label className="form-label small text-muted mb-1" htmlFor="editBranchLongitude">
+                          Longitude
+                        </label>
+
                         <input
+                          id="editBranchLongitude"
+                          name="editBranchLongitude"
                           className="form-control"
                           style={inputStyle}
                           value={eLng}
                           onChange={(e) => setELng(e.target.value)}
+                          required
                         />
                       </div>
 
@@ -567,14 +657,15 @@ export default function Branches() {
                               checked={eActive}
                               onChange={(e) => setEActive(e.target.checked)}
                             />
+
                             <label className="form-check-label fw-semibold" htmlFor="branchActive">
                               Active branch
                             </label>
                           </div>
 
                           <div className="text-muted small mt-1">
-                            If inactive, this branch remains saved but should not be used for new
-                            stock, order, or transfer operations.
+                            If inactive, assigned Branch Managers and Branch Staff will see
+                            only the inactive branch notice after login.
                           </div>
                         </div>
                       </div>

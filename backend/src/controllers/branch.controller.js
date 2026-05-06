@@ -3,6 +3,8 @@ import {
   createBranch,
   updateBranch,
   deleteBranch,
+  activateBranch,
+  deactivateBranch,
 } from "../services/branch.service.js";
 
 export const getBranches = async (_req, res, next) => {
@@ -27,6 +29,24 @@ export const updateBranchController = async (req, res, next) => {
   try {
     const data = await updateBranch(req.params.id, req.body);
     res.json({ success: true, message: "Branch updated", data });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const activateBranchController = async (req, res, next) => {
+  try {
+    const data = await activateBranch(req.params.id);
+    res.json({ success: true, message: "Branch activated", data });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const deactivateBranchController = async (req, res, next) => {
+  try {
+    const data = await deactivateBranch(req.params.id);
+    res.json({ success: true, message: "Branch deactivated", data });
   } catch (e) {
     next(e);
   }

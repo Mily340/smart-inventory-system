@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 
+const BRANCH_RESTRICTED_ROLES = ["BRANCH_MANAGER", "BRANCH_STAFF"];
+
 export default function Login() {
   const navigate = useNavigate();
 
@@ -12,12 +14,17 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const redirectByRole = (role) => {
+  const redirectByRole = (role, branchIsActive) => {
+    if (BRANCH_RESTRICTED_ROLES.includes(role) && branchIsActive === false) {
+      return "/branch-inactive";
+    }
+
     if (role === "SUPER_ADMIN") return "/dashboard";
     if (role === "BRANCH_MANAGER") return "/dashboard";
     if (role === "INVENTORY_OFFICER") return "/dashboard";
     if (role === "DELIVERY_RIDER") return "/deliveries";
     if (role === "BRANCH_STAFF") return "/orders";
+
     return "/dashboard";
   };
 
@@ -52,6 +59,16 @@ export default function Login() {
       const role = user?.role || tokenPayload?.role || "";
       const fullName = user?.fullName || tokenPayload?.fullName || "";
       const branchId = user?.branchId || tokenPayload?.branchId || "";
+      const branchName = user?.branch?.name || tokenPayload?.branchName || "";
+
+      const branchIsActive =
+        typeof user?.branchIsActive === "boolean"
+          ? user.branchIsActive
+          : typeof user?.branch?.isActive === "boolean"
+          ? user.branch.isActive
+          : typeof tokenPayload?.branchIsActive === "boolean"
+          ? tokenPayload.branchIsActive
+          : true;
 
       if (!role) {
         throw new Error("User role not found after login");
@@ -60,14 +77,18 @@ export default function Login() {
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("role", role);
       sessionStorage.setItem("fullName", fullName);
-      sessionStorage.setItem("branchId", branchId);
+      sessionStorage.setItem("branchId", branchId || "");
+      sessionStorage.setItem("branchName", branchName || "");
+      sessionStorage.setItem("branchIsActive", String(branchIsActive));
 
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("fullName");
       localStorage.removeItem("branchId");
+      localStorage.removeItem("branchName");
+      localStorage.removeItem("branchIsActive");
 
-      navigate(redirectByRole(role), { replace: true });
+      navigate(redirectByRole(role, branchIsActive), { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Login failed");
     } finally {
@@ -93,9 +114,13 @@ export default function Login() {
 
       <form onSubmit={onSubmit}>
         <div className="mb-3">
-          <label className="form-label">Email</label>
+          <label className="form-label" htmlFor="email">
+            Email
+          </label>
 
           <input
+            id="email"
+            name="email"
             className="form-control"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -104,10 +129,14 @@ export default function Login() {
         </div>
 
         <div className="mb-3">
-          <label className="form-label">Password</label>
+          <label className="form-label" htmlFor="password">
+            Password
+          </label>
 
           <div className="input-group">
             <input
+              id="password"
+              name="password"
               className="form-control"
               type={showPassword ? "text" : "password"}
               value={password}
