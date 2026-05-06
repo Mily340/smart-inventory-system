@@ -21,36 +21,12 @@ const badgeStyle = (status) => {
   };
 
   const map = {
-    PENDING: {
-      background: "#FFF7ED",
-      color: "#9A3412",
-      borderColor: "#FED7AA",
-    },
-    APPROVED: {
-      background: "#ECFDF5",
-      color: "#065F46",
-      borderColor: "#A7F3D0",
-    },
-    PACKED: {
-      background: "#EFF6FF",
-      color: "#1D4ED8",
-      borderColor: "#BFDBFE",
-    },
-    DISPATCHED: {
-      background: "#F5F3FF",
-      color: "#5B21B6",
-      borderColor: "#DDD6FE",
-    },
-    DELIVERED: {
-      background: "#ECFEFF",
-      color: "#0E7490",
-      borderColor: "#A5F3FC",
-    },
-    CANCELLED: {
-      background: "#FEF2F2",
-      color: "#B91C1C",
-      borderColor: "#FECACA",
-    },
+    PENDING: { background: "#FFF7ED", color: "#9A3412", borderColor: "#FED7AA" },
+    APPROVED: { background: "#ECFDF5", color: "#065F46", borderColor: "#A7F3D0" },
+    PACKED: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    DISPATCHED: { background: "#F5F3FF", color: "#5B21B6", borderColor: "#DDD6FE" },
+    DELIVERED: { background: "#ECFEFF", color: "#0E7490", borderColor: "#A5F3FC" },
+    CANCELLED: { background: "#FEF2F2", color: "#B91C1C", borderColor: "#FECACA" },
   };
 
   return {
@@ -109,12 +85,26 @@ export default function Orders() {
   const isBranchScoped = isBranchManager || isBranchStaff;
   const canManageWorkflow = isSuperAdmin || isInventoryOfficer || isBranchManager;
 
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.isActive !== false),
+    [branches]
+  );
+
+  const selectedBranch = useMemo(
+    () => branches.find((b) => b.id === branchId) || null,
+    [branches, branchId]
+  );
+
+  const selectedBranchIsActive = selectedBranch ? selectedBranch.isActive !== false : true;
+
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
       sessionStorage.removeItem("token");
       sessionStorage.removeItem("role");
       sessionStorage.removeItem("fullName");
       sessionStorage.removeItem("branchId");
+      sessionStorage.removeItem("branchName");
+      sessionStorage.removeItem("branchIsActive");
       navigate("/login");
       return true;
     }
@@ -123,7 +113,19 @@ export default function Orders() {
   };
 
   const fetchStockForBranch = async (bId) => {
-    if (!bId) return;
+    if (!bId) {
+      setStockItems([]);
+      setProductId("");
+      return;
+    }
+
+    const branch = branches.find((b) => b.id === bId);
+    if (branch && branch.isActive === false) {
+      setStockItems([]);
+      setProductId("");
+      setError("This branch is inactive. Please activate the branch before creating orders.");
+      return;
+    }
 
     setLoadingStock(true);
 
@@ -164,11 +166,6 @@ export default function Orders() {
         return;
       }
 
-      /*
-        Important:
-        The order table should always show the full accessible order list.
-        The selected branch is only used for creating an order and loading branch stock.
-      */
       const orderUrl = "/orders";
 
       if (isBranchScoped) {
@@ -199,19 +196,28 @@ export default function Orders() {
 
         const d = dRes.data?.data || [];
         const b = bRes.data?.data || [];
+        const active = b.filter((branch) => branch.isActive !== false);
         const o = oRes.data?.data || [];
 
         setDistributors(d);
-        setBranches(b);
+        setBranches(active);
         setOrders(o);
 
+        const currentBranchStillActive = active.some((branch) => branch.id === branchId);
         const nextDistributorId = distributorId || (d[0]?.id ?? "");
-        const nextBranchId = branchId || (b[0]?.id ?? "");
+        const nextBranchId =
+          currentBranchStillActive && branchId ? branchId : active[0]?.id || "";
 
         if (!distributorId && nextDistributorId) setDistributorId(nextDistributorId);
-        if (!branchId && nextBranchId) setBranchId(nextBranchId);
+        setBranchId(nextBranchId);
 
-        if (nextBranchId) await fetchStockForBranch(nextBranchId);
+        if (nextBranchId) {
+          await fetchStockForBranch(nextBranchId);
+        } else {
+          setStockItems([]);
+          setProductId("");
+          setError("No active branches available for creating orders.");
+        }
       }
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load orders";
@@ -262,7 +268,7 @@ export default function Orders() {
 
     if (fromStock?.branch?.name) return fromStock.branch.name;
 
-    return "Assigned Branch";
+    return sessionStorage.getItem("branchName") || "Assigned Branch";
   }, [assignedBranchId, isBranchScoped, orders, stockItems]);
 
   const qtyNum = useMemo(() => {
@@ -276,6 +282,7 @@ export default function Orders() {
     distributorId &&
     branchId &&
     productId &&
+    selectedBranchIsActive &&
     unitPrice > 0 &&
     availableQty > 0 &&
     qtyValid &&
@@ -294,6 +301,12 @@ export default function Orders() {
 
     if (!distributorId || !finalBranchId || !productId) {
       setError("Please select distributor, branch and product.");
+      return;
+    }
+
+    const branch = branches.find((b) => b.id === finalBranchId);
+    if (branch && branch.isActive === false) {
+      setError("This branch is inactive. Please activate the branch before creating orders.");
       return;
     }
 
@@ -430,10 +443,7 @@ export default function Orders() {
     return <span className="text-muted">—</span>;
   };
 
-  const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
-  };
+  const pageWrapStyle = { marginTop: 18, paddingBottom: 26 };
 
   const panelStyle = {
     borderRadius: 18,
@@ -474,7 +484,7 @@ export default function Orders() {
             <div className="text-muted" style={{ marginTop: 4 }}>
               {isBranchScoped
                 ? "Manage orders for your assigned branch only."
-                : "Create orders using branch stock and track order workflow."}
+                : "Create orders using active branch stock and track order workflow."}
             </div>
           </div>
 
@@ -511,7 +521,7 @@ export default function Orders() {
                 <div className="text-muted" style={{ fontSize: 13 }}>
                   {isBranchScoped
                     ? "Branch is locked to your assigned branch."
-                    : "Select distributor, branch, product from stock, then quantity."}
+                    : "Only active branches are available for new orders."}
                 </div>
               </div>
 
@@ -572,8 +582,9 @@ export default function Orders() {
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
                     required
+                    disabled={activeBranches.length === 0}
                   >
-                    {branches.map((b) => (
+                    {activeBranches.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.code ? `${b.code} - ` : ""}
                         {b.name}
@@ -596,7 +607,7 @@ export default function Orders() {
                     setQuantity("");
                   }}
                   required
-                  disabled={loadingStock}
+                  disabled={loadingStock || !branchId}
                 >
                   {stockItems.map((it) => (
                     <option
@@ -616,7 +627,7 @@ export default function Orders() {
                   {loadingStock
                     ? "Loading branch stock..."
                     : stockItems.length === 0
-                    ? "No products stocked in this branch yet."
+                    ? "No products stocked in this active branch yet."
                     : null}
                 </div>
               </div>
@@ -735,7 +746,12 @@ export default function Orders() {
                       <tr key={o.id}>
                         <td style={{ fontWeight: 800 }}>{o.code || "-"}</td>
                         <td>{o.distributor?.name || "-"}</td>
-                        <td>{o.branch?.name || "-"}</td>
+                        <td>
+                          {o.branch?.name || "-"}
+                          {o.branch?.isActive === false ? (
+                            <span className="text-muted small ms-1">(Inactive)</span>
+                          ) : null}
+                        </td>
                         <td>
                           <span style={badgeStyle(o.status)}>{o.status}</span>
                         </td>
@@ -774,13 +790,7 @@ export default function Orders() {
             )}
 
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              {isBranchStaff
-                ? "Branch Staff can create orders and cancel only PENDING orders."
-                : isBranchManager
-                ? "Branch Manager can manage orders only for the assigned branch."
-                : canManageWorkflow
-                ? "Admin Staff can manage full order workflow: PENDING → APPROVED → PACKED → DISPATCHED → DELIVERED."
-                : null}
+              New orders can be created only for active branches. Existing old orders remain visible for history.
             </div>
           </div>
         </div>
