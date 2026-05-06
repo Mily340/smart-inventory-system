@@ -70,7 +70,7 @@ export default function BranchInactive() {
           <h3 style={{ fontWeight: 900, color: "#0F172A" }}>Branch Inactive</h3>
 
           <p className="text-muted mb-2" style={{ fontSize: 16 }}>
-            Your branch is inactive for now.
+            Your branch is inactive or deactivated for now.
           </p>
 
           <p className="text-muted mb-4" style={{ fontSize: 15 }}>

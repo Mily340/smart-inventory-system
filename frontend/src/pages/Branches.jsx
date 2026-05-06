@@ -199,13 +199,13 @@ export default function Branches() {
     setError("");
     setBusyId(b.id);
 
-    const active = b.isActive !== false;
-    const endpoint = active
-      ? `/branches/${b.id}/deactivate`
-      : `/branches/${b.id}/activate`;
+    const nextStatus = !(b.isActive !== false);
 
     try {
-      await client.patch(endpoint);
+      await client.put(`/branches/${b.id}`, {
+        isActive: nextStatus,
+      });
+
       await fetchBranches();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update branch status");
@@ -577,7 +577,10 @@ export default function Branches() {
                   <div className="modal-body">
                     <div className="row g-3">
                       <div className="col-12">
-                        <label className="form-label small text-muted mb-1" htmlFor="editBranchName">
+                        <label
+                          className="form-label small text-muted mb-1"
+                          htmlFor="editBranchName"
+                        >
                           Name
                         </label>
 
@@ -593,7 +596,10 @@ export default function Branches() {
                       </div>
 
                       <div className="col-12">
-                        <label className="form-label small text-muted mb-1" htmlFor="editBranchAddress">
+                        <label
+                          className="form-label small text-muted mb-1"
+                          htmlFor="editBranchAddress"
+                        >
                           Address
                         </label>
 
@@ -609,7 +615,10 @@ export default function Branches() {
                       </div>
 
                       <div className="col-6">
-                        <label className="form-label small text-muted mb-1" htmlFor="editBranchLatitude">
+                        <label
+                          className="form-label small text-muted mb-1"
+                          htmlFor="editBranchLatitude"
+                        >
                           Latitude
                         </label>
 
@@ -625,7 +634,10 @@ export default function Branches() {
                       </div>
 
                       <div className="col-6">
-                        <label className="form-label small text-muted mb-1" htmlFor="editBranchLongitude">
+                        <label
+                          className="form-label small text-muted mb-1"
+                          htmlFor="editBranchLongitude"
+                        >
                           Longitude
                         </label>
 
