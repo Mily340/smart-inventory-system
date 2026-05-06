@@ -11,9 +11,9 @@ const badgeStyle = (status) => {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    padding: "6px 10px",
+    padding: "5px 9px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     letterSpacing: 0.2,
     border: "1px solid transparent",
@@ -46,15 +46,24 @@ const actionCompleteStyle = (type) => {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 34,
-    height: 34,
+    width: 30,
+    height: 30,
     borderRadius: "50%",
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 900,
     border: isDelivered ? "1px solid #A7F3D0" : "1px solid #FECACA",
     background: isDelivered ? "#ECFDF5" : "#FEF2F2",
     color: isDelivered ? "#047857" : "#B91C1C",
   };
+};
+
+const money = (value) => `৳${Number(value || 0).toLocaleString()}`;
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString();
 };
 
 export default function Orders() {
@@ -74,8 +83,11 @@ export default function Orders() {
   const [loadingStock, setLoadingStock] = useState(false);
   const [error, setError] = useState("");
 
+  const [invoiceOrder, setInvoiceOrder] = useState(null);
+
   const role = sessionStorage.getItem("role") || "";
   const assignedBranchId = sessionStorage.getItem("branchId") || "";
+  const fullName = sessionStorage.getItem("fullName") || "System User";
 
   const isSuperAdmin = role === "SUPER_ADMIN";
   const isInventoryOfficer = role === "INVENTORY_OFFICER";
@@ -340,9 +352,29 @@ export default function Orders() {
     try {
       await client.patch(`/orders/${id}/status`, { status });
       await fetchAll();
+
+      if (invoiceOrder?.id === id && status === "CANCELLED") {
+        setInvoiceOrder(null);
+      }
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update status");
     }
+  };
+
+  const openInvoice = (order) => {
+    if (order.status === "CANCELLED") return;
+    setInvoiceOrder(order);
+    setTimeout(() => {
+      document.getElementById("invoice-section")?.scrollIntoView({ behavior: "smooth" });
+    }, 80);
+  };
+
+  const closeInvoice = () => {
+    setInvoiceOrder(null);
+  };
+
+  const printInvoice = () => {
+    window.print();
   };
 
   const renderStatusButtons = (o) => {
@@ -367,7 +399,7 @@ export default function Orders() {
         return (
           <button
             className="btn btn-sm btn-outline-danger"
-            style={{ borderRadius: 10, fontWeight: 700 }}
+            style={{ borderRadius: 8, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
             onClick={() => updateStatus(o.id, "CANCELLED")}
           >
             Cancel
@@ -384,10 +416,10 @@ export default function Orders() {
 
     if (o.status === "PENDING") {
       return (
-        <div className="d-flex gap-2 flex-wrap justify-content-center">
+        <div className="d-flex gap-1 flex-wrap justify-content-center">
           <button
             className="btn btn-sm btn-outline-success"
-            style={{ borderRadius: 10, fontWeight: 700 }}
+            style={{ borderRadius: 8, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
             onClick={() => updateStatus(o.id, "APPROVED")}
           >
             Approve
@@ -395,7 +427,7 @@ export default function Orders() {
 
           <button
             className="btn btn-sm btn-outline-danger"
-            style={{ borderRadius: 10, fontWeight: 700 }}
+            style={{ borderRadius: 8, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
             onClick={() => updateStatus(o.id, "CANCELLED")}
           >
             Cancel
@@ -408,10 +440,10 @@ export default function Orders() {
       return (
         <button
           className="btn btn-sm btn-outline-primary"
-          style={{ borderRadius: 10, fontWeight: 700 }}
+          style={{ borderRadius: 8, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
           onClick={() => updateStatus(o.id, "PACKED")}
         >
-          Mark Packed
+          Packed
         </button>
       );
     }
@@ -420,7 +452,7 @@ export default function Orders() {
       return (
         <button
           className="btn btn-sm btn-outline-primary"
-          style={{ borderRadius: 10, fontWeight: 700 }}
+          style={{ borderRadius: 8, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
           onClick={() => updateStatus(o.id, "DISPATCHED")}
         >
           Dispatch
@@ -432,7 +464,7 @@ export default function Orders() {
       return (
         <button
           className="btn btn-sm btn-outline-secondary"
-          style={{ borderRadius: 10, fontWeight: 700 }}
+          style={{ borderRadius: 8, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
           onClick={() => updateStatus(o.id, "DELIVERED")}
         >
           Delivered
@@ -473,9 +505,48 @@ export default function Orders() {
 
   return (
     <>
+      <style>
+        {`
+          @media print {
+            .si-sidebar,
+            .si-topbar,
+            .no-print,
+            .orders-page-content {
+              display: none !important;
+            }
+
+            body.si-layout {
+              padding-left: 0 !important;
+              padding-top: 0 !important;
+              background: #ffffff !important;
+            }
+
+            .invoice-print-area {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
+            .invoice-print-card {
+              box-shadow: none !important;
+              border: 1px solid #d1d5db !important;
+              break-inside: avoid;
+              width: 100% !important;
+            }
+
+            .invoice-print-card .table {
+              font-size: 11px !important;
+            }
+
+            @page {
+              margin: 18mm 12mm;
+            }
+          }
+        `}
+      </style>
+
       <NavBar />
 
-      <div className="container-fluid px-4" style={pageWrapStyle}>
+      <div className="container-fluid px-4 orders-page-content" style={pageWrapStyle}>
         <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
           <div>
             <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
@@ -728,16 +799,19 @@ export default function Orders() {
               <div className="text-muted">Loading...</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-bordered table-hover align-middle">
+                <table
+                  className="table table-sm table-bordered table-hover align-middle"
+                  style={{ fontSize: 14 }}
+                >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 90 }}>Code</th>
-                      <th style={{ minWidth: 180 }}>Distributor</th>
-                      <th style={{ minWidth: 140 }}>Branch</th>
-                      <th style={{ width: 130 }}>Status</th>
-                      <th style={{ width: 120 }}>Total</th>
-                      <th style={{ minWidth: 320 }}>Items</th>
-                      <th style={{ width: 180, textAlign: "center" }}>Actions</th>
+                      <th style={{ width: 75 }}>Code</th>
+                      <th style={{ minWidth: 150 }}>Distributor</th>
+                      <th style={{ minWidth: 125 }}>Branch</th>
+                      <th style={{ width: 105 }}>Status</th>
+                      <th style={{ width: 90 }}>Total</th>
+                      <th style={{ minWidth: 240 }}>Items</th>
+                      <th style={{ width: 215, textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -757,13 +831,13 @@ export default function Orders() {
                         </td>
                         <td style={{ fontWeight: 800 }}>
                           {typeof o.totalAmount === "number"
-                            ? `৳${o.totalAmount}`
+                            ? money(o.totalAmount)
                             : o.totalAmount}
                         </td>
                         <td>
                           {o.items?.length ? (
                             o.items.map((it) => (
-                              <div key={it.id} style={{ lineHeight: 1.35 }}>
+                              <div key={it.id} style={{ lineHeight: 1.25 }}>
                                 <span style={{ fontWeight: 700 }}>{it.product?.name}</span>{" "}
                                 <span className="text-muted">x {it.quantity}</span>{" "}
                                 <span className="text-muted">(@{it.unitPrice})</span>
@@ -773,7 +847,29 @@ export default function Orders() {
                             <span className="text-muted">—</span>
                           )}
                         </td>
-                        <td className="text-center">{renderStatusButtons(o)}</td>
+                        <td className="text-center">
+                          <div className="d-flex flex-wrap gap-1 justify-content-center align-items-center">
+                            {o.status !== "CANCELLED" ? (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-dark"
+                                style={{
+                                  borderRadius: 8,
+                                  fontWeight: 800,
+                                  padding: "4px 9px",
+                                  fontSize: 12,
+                                }}
+                                onClick={() => openInvoice(o)}
+                                title="Generate invoice"
+                              >
+                                <i className="bi bi-receipt me-1"></i>
+                                Invoice
+                              </button>
+                            ) : null}
+
+                            {renderStatusButtons(o)}
+                          </div>
+                        </td>
                       </tr>
                     ))}
 
@@ -790,11 +886,291 @@ export default function Orders() {
             )}
 
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              New orders can be created only for active branches. Existing old orders remain visible for history.
+              New orders can be created only for active branches. Cancelled orders do not generate invoices.
             </div>
           </div>
         </div>
       </div>
+
+      {invoiceOrder ? (
+        <div
+          id="invoice-section"
+          className="container-fluid px-4 invoice-print-area"
+          style={{ marginTop: 18, paddingBottom: 26 }}
+        >
+          <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3 no-print">
+            <div>
+              <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+                Invoice
+              </h2>
+              <div className="text-muted" style={{ marginTop: 4 }}>
+                Generated invoice for order {invoiceOrder.code || "-"}.
+              </div>
+            </div>
+
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                style={{ borderRadius: 10, fontWeight: 700, padding: "8px 14px" }}
+                onClick={closeInvoice}
+              >
+                Close Invoice
+              </button>
+
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ borderRadius: 10, fontWeight: 800, padding: "8px 14px" }}
+                onClick={printInvoice}
+              >
+                <i className="bi bi-printer me-1"></i>
+                Print / Save PDF
+              </button>
+            </div>
+          </div>
+
+          <InvoiceCard order={invoiceOrder} preparedBy={fullName} />
+        </div>
+      ) : null}
     </>
+  );
+}
+
+function InvoiceCard({ order, preparedBy }) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const total = Number(order?.totalAmount || 0);
+  const distributor = order?.distributor || {};
+  const branch = order?.branch || {};
+  const generatedAt = new Date().toLocaleString();
+
+  const invoiceNo = `INV-${order?.code || order?.id || "-"}`;
+
+  return (
+    <div
+      className="card invoice-print-card"
+      style={{
+        borderRadius: 18,
+        border: "1px solid rgba(148,163,184,.35)",
+        boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+        overflow: "hidden",
+      }}
+    >
+      <div className="report-brand-print">
+        <div
+          style={{
+            textAlign: "center",
+            padding: "16px 20px 12px",
+            borderBottom: "1px solid rgba(148,163,184,.35)",
+            background: "#FFFFFF",
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 22,
+              fontWeight: 800,
+              letterSpacing: 0.8,
+              color: "#0F172A",
+              textTransform: "uppercase",
+            }}
+          >
+            SMART INVENTORY SYSTEM
+          </h1>
+        </div>
+
+        <div
+          style={{
+            padding: "16px 20px",
+            borderBottom: "1px solid rgba(148,163,184,.35)",
+            background:
+              "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+          }}
+        >
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+              <h2
+                className="m-0"
+                style={{
+                  fontWeight: 900,
+                  color: "#0F172A",
+                  fontSize: 26,
+                }}
+              >
+                Order Invoice
+              </h2>
+
+              <div className="text-muted" style={{ fontSize: 14, marginTop: 6 }}>
+                <strong>Generated:</strong> {generatedAt}
+              </div>
+            </div>
+
+            <div className="text-end" style={{ fontSize: 14, lineHeight: 1.7 }}>
+              <div>
+                <strong>Invoice No:</strong> {invoiceNo}
+              </div>
+              <div>
+                <strong>Order Code:</strong> {order?.code || "-"}
+              </div>
+              <div>
+                <strong>Order Date:</strong> {formatDateTime(order?.createdAt)}
+              </div>
+              <div>
+                <strong>Status:</strong>{" "}
+                <span style={badgeStyle(order?.status)}>{order?.status || "-"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card-body">
+        <div className="row g-3 mb-4">
+          <InfoCard
+            title="Distributor Information"
+            rows={[
+              ["Name", distributor.name || "-"],
+              ["Email", distributor.email || "-"],
+              ["Phone", distributor.phone || "-"],
+              ["Address", distributor.address || "-"],
+            ]}
+          />
+
+          <InfoCard
+            title="Branch Information"
+            rows={[
+              [
+                "Branch",
+                `${branch.code ? `${branch.code} - ` : ""}${branch.name || "-"}`,
+              ],
+              ["Address", branch.address || "-"],
+              ["Prepared By", preparedBy || "-"],
+              ["Prepared At", generatedAt],
+            ]}
+          />
+        </div>
+
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+            Product Details
+          </div>
+
+          <div className="text-muted" style={{ fontSize: 13 }}>
+            {items.length} item(s)
+          </div>
+        </div>
+
+        <div className="table-responsive">
+          <table className="table table-sm table-bordered table-hover align-middle mb-0">
+            <thead className="table-light">
+              <tr>
+                <th style={{ width: 60, textAlign: "center" }}>SL</th>
+                <th>Product</th>
+                <th style={{ width: 95, textAlign: "center" }}>Qty</th>
+                <th style={{ width: 130, textAlign: "right" }}>Unit Price</th>
+                <th style={{ width: 140, textAlign: "right" }}>Subtotal</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {items.map((it, index) => {
+                const qty = Number(it.quantity || 0);
+                const unit = Number(it.unitPrice || 0);
+                const subtotal = Number(it.subtotal || qty * unit || 0);
+
+                return (
+                  <tr key={it.id || `${it.productId}-${index}`}>
+                    <td style={{ textAlign: "center", fontWeight: 800 }}>{index + 1}</td>
+                    <td>
+                      <div style={{ fontWeight: 800, color: "#0F172A" }}>
+                        {it.product?.code ? `${it.product.code} - ` : ""}
+                        {it.product?.name || "Product"}
+                      </div>
+                      <div className="text-muted small">Unit: {it.product?.unit || "-"}</div>
+                    </td>
+                    <td style={{ textAlign: "center" }}>{qty}</td>
+                    <td style={{ textAlign: "right" }}>{money(unit)}</td>
+                    <td style={{ textAlign: "right", fontWeight: 800 }}>{money(subtotal)}</td>
+                  </tr>
+                );
+              })}
+
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center text-muted py-4">
+                    No items found.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+
+            <tfoot>
+              <tr>
+                <td colSpan="4" style={{ textAlign: "right", fontWeight: 900 }}>
+                  Grand Total
+                </td>
+                <td style={{ textAlign: "right", fontWeight: 900, fontSize: 16 }}>
+                  {money(total)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div
+          className="d-flex justify-content-between align-items-end gap-3"
+          style={{
+            marginTop: 34,
+            fontSize: 12,
+            color: "#475569",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 800, color: "#0F172A" }}>Note</div>
+            <div>This is a system-generated invoice.</div>
+            <div>Goods should be verified with the order record.</div>
+          </div>
+
+          <div style={{ textAlign: "center", minWidth: 170 }}>
+            <div
+              style={{
+                borderTop: "1px solid #0F172A",
+                paddingTop: 6,
+                fontWeight: 800,
+                color: "#0F172A",
+              }}
+            >
+              Authorized Signature
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoCard({ title, rows }) {
+  return (
+    <div className="col-12 col-md-6">
+      <div
+        className="p-3 h-100"
+        style={{
+          borderRadius: 16,
+          border: "1px solid rgba(148,163,184,.28)",
+          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          background: "rgba(255,255,255,.88)",
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A", marginBottom: 10 }}>
+          {title}
+        </div>
+
+        <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <strong>{label}:</strong> {value}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

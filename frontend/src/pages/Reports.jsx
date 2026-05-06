@@ -112,6 +112,8 @@ export default function Reports() {
       sessionStorage.removeItem("role");
       sessionStorage.removeItem("fullName");
       sessionStorage.removeItem("branchId");
+      sessionStorage.removeItem("branchName");
+      sessionStorage.removeItem("branchIsActive");
       navigate("/login");
       return true;
     }
@@ -420,6 +422,15 @@ export default function Reports() {
     borderRadius: 12,
   };
 
+  const branchLabel = selectedBranch
+    ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
+    : "All Branches";
+
+  const dateRangeLabel =
+    tab === "lowStock" ? "Current stock level" : `${from || "Start"} to ${to || "Today"}`;
+
+  const statusLabel = status || (statusFilterEnabled ? "All" : "Not applicable");
+
   return (
     <>
       <style>
@@ -450,6 +461,14 @@ export default function Reports() {
 
             .table {
               font-size: 11px !important;
+            }
+
+            .report-brand-print {
+              page-break-inside: avoid;
+            }
+
+            @page {
+              margin: 18mm 12mm;
             }
           }
         `}
@@ -665,33 +684,65 @@ export default function Reports() {
         </div>
 
         <div className="card print-card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
-            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-              <div>
-                <h3 className="m-0" style={{ fontWeight: 900, color: "#0F172A" }}>
-                  {reportTitle}
-                </h3>
-                <div className="text-muted" style={{ fontSize: 13, marginTop: 4 }}>
-                  Generated: {generatedAt}
-                </div>
-              </div>
+          <div className="report-brand-print">
+            <div
+              style={{
+                textAlign: "center",
+                padding: "16px 20px 12px",
+                borderBottom: "1px solid rgba(148,163,184,.35)",
+                background: "#FFFFFF",
+              }}
+            >
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  fontWeight: 800,
+                  letterSpacing: 0.8,
+                  color: "#0F172A",
+                  textTransform: "uppercase",
+                }}
+              >
+                SMART INVENTORY SYSTEM
+              </h1>
+            </div>
 
-              <div className="text-end" style={{ fontSize: 13 }}>
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid rgba(148,163,184,.35)",
+                background:
+                  "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+              }}
+            >
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
                 <div>
-                  <strong>Branch:</strong>{" "}
-                  {selectedBranch
-                    ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
-                    : "All Branches"}
+                  <h2
+                    className="m-0"
+                    style={{
+                      fontWeight: 900,
+                      color: "#0F172A",
+                      fontSize: 26,
+                    }}
+                  >
+                    {reportTitle}
+                  </h2>
+
+                  <div className="text-muted" style={{ fontSize: 14, marginTop: 6 }}>
+                    <strong>Generated:</strong> {generatedAt}
+                  </div>
                 </div>
-                <div>
-                  <strong>Date Range:</strong>{" "}
-                  {tab === "lowStock"
-                    ? "Current stock level"
-                    : `${from || "Start"} to ${to || "Today"}`}
-                </div>
-                <div>
-                  <strong>Status:</strong>{" "}
-                  {status || (statusFilterEnabled ? "All" : "Not applicable")}
+
+                <div className="text-end" style={{ fontSize: 14, lineHeight: 1.7 }}>
+                  <div>
+                    <strong>Branch:</strong> {branchLabel}
+                  </div>
+                  <div>
+                    <strong>Date Range:</strong> {dateRangeLabel}
+                  </div>
+                  <div>
+                    <strong>Status:</strong> {statusLabel}
+                  </div>
                 </div>
               </div>
             </div>
