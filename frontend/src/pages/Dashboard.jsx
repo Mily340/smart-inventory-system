@@ -34,7 +34,7 @@ const deliveryStatuses = ["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "DELIVERED", "F
 
 const roleLabel = (role) => {
   const map = {
-    SUPER_ADMIN: "Super Admin",
+    SUPER_ADMIN: "System Administrator",
     BRANCH_MANAGER: "Branch Manager",
     INVENTORY_OFFICER: "Inventory Officer",
     BRANCH_STAFF: "Branch Staff",
@@ -104,7 +104,6 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const role = sessionStorage.getItem("role") || "";
-  const fullName = sessionStorage.getItem("fullName") || "";
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -378,10 +377,10 @@ export default function Dashboard() {
 
             <div className="text-muted" style={{ marginTop: 4 }}>
               Quick overview using live system data.
-              {fullName ? (
+              {role ? (
                 <span>
                   {" "}
-                  Logged in as <strong>{fullName}</strong> ({roleLabel(role)}).
+                  Logged in as <strong>{roleLabel(role)}</strong>.
                 </span>
               ) : null}
             </div>

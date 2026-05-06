@@ -5,6 +5,18 @@ import "./NavBar.css";
 
 const SIDEBAR_SCROLL_KEY = "si_sidebar_scrollTop";
 
+const getRoleLabel = (role) => {
+  const labels = {
+    SUPER_ADMIN: "System Administrator",
+    INVENTORY_OFFICER: "Inventory Officer",
+    BRANCH_MANAGER: "Branch Manager",
+    BRANCH_STAFF: "Branch Staff",
+    DELIVERY_RIDER: "Delivery Rider",
+  };
+
+  return labels[role] || role || "—";
+};
+
 export default function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -106,7 +118,7 @@ export default function NavBar() {
     : isBranchManager
     ? "Branch Manager Panel"
     : isSuperAdmin
-    ? "Admin Dashboard"
+    ? "System Administrator Dashboard"
     : isInventoryOfficer
     ? "Inventory Panel"
     : "Dashboard";
@@ -118,7 +130,7 @@ export default function NavBar() {
       <header className="si-topbar">
         <div className="si-topbar-inner">
           <div className="si-topbar-right">
-            <span className="si-role-pill">Role: {role || "—"}</span>
+            <span className="si-role-pill">Role: {getRoleLabel(role)}</span>
             <button className="btn btn-outline-secondary btn-sm" onClick={logout}>
               Logout
             </button>
@@ -185,7 +197,7 @@ export default function NavBar() {
 
               {isSuperAdmin ? (
                 <>
-                  <div className="si-nav-section">Admin</div>
+                  <div className="si-nav-section">Administration</div>
 
                   <Link
                     className={`si-link ${isActive("/admin/users") ? "active" : ""}`}
