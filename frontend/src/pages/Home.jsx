@@ -178,7 +178,7 @@ export default function Home() {
                 }}
               >
                 <i className="bi bi-stars"></i>
-                Practicum Project
+                Smart Business Operations
               </div>
 
               <h1
@@ -436,7 +436,7 @@ export default function Home() {
             fontSize: 12,
           }}
         >
-          Smart Inventory System · Practicum Project · BCSE, IUBAT
+          Smart Inventory System · Practicum Project · By Sumaiya Islam Mily, BCSE, IUBAT
         </footer>
       </div>
     </div>
