@@ -18,8 +18,8 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role") || "";
+  const token = sessionStorage.getItem("token");
+  const role = sessionStorage.getItem("role") || "";
 
   const dashboardPath =
     role === "DELIVERY_RIDER"
@@ -64,10 +64,10 @@ export default function Catalog() {
   }, [products, q, categoryId]);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("fullName");
-    localStorage.removeItem("branchId");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("fullName");
+    sessionStorage.removeItem("branchId");
     navigate("/catalog", { replace: true });
   };
 

@@ -13,7 +13,7 @@ const isPublicUrl = (url = "") =>
   url.startsWith("/auth/login");
 
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   if (token && config.url && !isPublicUrl(config.url)) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -30,6 +30,11 @@ client.interceptors.response.use(
 
     // Only force logout for protected endpoints
     if (status === 401 && !isPublicUrl(url)) {
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("role");
+      sessionStorage.removeItem("fullName");
+      sessionStorage.removeItem("branchId");
+
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("fullName");

@@ -103,8 +103,8 @@ const money = (value) => `৳${Number(value || 0).toLocaleString()}`;
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  const role = localStorage.getItem("role") || "";
-  const fullName = localStorage.getItem("fullName") || "";
+  const role = sessionStorage.getItem("role") || "";
+  const fullName = sessionStorage.getItem("fullName") || "";
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -151,10 +151,10 @@ export default function Dashboard() {
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("branchId");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("role");
+      sessionStorage.removeItem("fullName");
+      sessionStorage.removeItem("branchId");
       navigate("/login");
       return true;
     }

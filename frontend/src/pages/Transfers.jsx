@@ -69,8 +69,8 @@ export default function Transfers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const role = localStorage.getItem("role") || "";
-  const assignedBranchId = localStorage.getItem("branchId") || "";
+  const role = sessionStorage.getItem("role") || "";
+  const assignedBranchId = sessionStorage.getItem("branchId") || "";
 
   const isSuperAdmin = role === "SUPER_ADMIN";
   const isInventoryOfficer = role === "INVENTORY_OFFICER";
@@ -85,10 +85,10 @@ export default function Transfers() {
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("branchId");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("role");
+      sessionStorage.removeItem("fullName");
+      sessionStorage.removeItem("branchId");
       navigate("/login");
       return true;
     }

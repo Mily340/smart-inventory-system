@@ -4,8 +4,8 @@ import { Navigate, useLocation } from "react-router-dom";
 export default function ProtectedRoute({ children, allowedRoles }) {
   const location = useLocation();
 
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role") || "";
+  const token = sessionStorage.getItem("token");
+  const role = sessionStorage.getItem("role") || "";
 
   const getDefaultPath = (userRole) => {
     if (userRole === "SUPER_ADMIN") return "/dashboard";

@@ -36,10 +36,15 @@ export default function Login() {
         throw new Error("Token not found in response");
       }
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", user?.role || "");
-      localStorage.setItem("fullName", user?.fullName || "");
-      localStorage.setItem("branchId", user?.branchId || "");
+      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("role", user?.role || "");
+      sessionStorage.setItem("fullName", user?.fullName || "");
+      sessionStorage.setItem("branchId", user?.branchId || "");
+
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("role");
+      sessionStorage.removeItem("fullName");
+      sessionStorage.removeItem("branchId");
 
       navigate(redirectByRole(user?.role), { replace: true });
     } catch (err) {

@@ -10,8 +10,8 @@ export default function NavBar() {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
 
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role") || "";
+  const token = sessionStorage.getItem("token");
+  const role = sessionStorage.getItem("role") || "";
 
   const isLoggedIn = !!token;
 
@@ -21,8 +21,6 @@ export default function NavBar() {
   const isBranchStaff = role === "BRANCH_STAFF";
   const isRider = role === "DELIVERY_RIDER";
 
-  // Admin-level menu users
-  // BRANCH_MANAGER is intentionally excluded here.
   const isAdminStaff = isSuperAdmin || isInventoryOfficer;
 
   const isPublicCatalog = location.pathname.startsWith("/catalog");
@@ -66,11 +64,17 @@ export default function NavBar() {
   }, [shouldShowShell]);
 
   const logout = () => {
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("fullName");
+    sessionStorage.removeItem("branchId");
+    sessionStorage.removeItem(SIDEBAR_SCROLL_KEY);
+
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("fullName");
     localStorage.removeItem("branchId");
-    sessionStorage.removeItem(SIDEBAR_SCROLL_KEY);
+
     navigate("/login");
   };
 

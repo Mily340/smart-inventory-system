@@ -86,8 +86,8 @@ export default function Inventory() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const role = localStorage.getItem("role") || "";
-  const assignedBranchId = localStorage.getItem("branchId") || "";
+  const role = sessionStorage.getItem("role") || "";
+  const assignedBranchId = sessionStorage.getItem("branchId") || "";
 
   const isBranchManager = role === "BRANCH_MANAGER";
   const isBranchStaff = role === "BRANCH_STAFF";
@@ -137,10 +137,10 @@ export default function Inventory() {
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("branchId");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("role");
+      sessionStorage.removeItem("fullName");
+      sessionStorage.removeItem("branchId");
       navigate("/login");
       return true;
     }
