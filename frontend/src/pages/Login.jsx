@@ -18,7 +18,17 @@ export default function Login() {
     if (role === "INVENTORY_OFFICER") return "/dashboard";
     if (role === "DELIVERY_RIDER") return "/deliveries";
     if (role === "BRANCH_STAFF") return "/orders";
-    return "/login";
+    return "/dashboard";
+  };
+
+  const decodeJwtPayload = (token) => {
+    try {
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(window.atob(base64));
+    } catch {
+      return {};
+    }
   };
 
   const onSubmit = async (e) => {
@@ -29,24 +39,35 @@ export default function Login() {
     try {
       const res = await client.post("/auth/login", { email, password });
 
-      const token = res.data?.data?.token;
-      const user = res.data?.data?.user;
+      const data = res.data?.data || {};
+      const token = data.token;
 
       if (!token) {
         throw new Error("Token not found in response");
       }
 
+      const tokenPayload = decodeJwtPayload(token);
+      const user = data.user || data;
+
+      const role = user?.role || tokenPayload?.role || "";
+      const fullName = user?.fullName || tokenPayload?.fullName || "";
+      const branchId = user?.branchId || tokenPayload?.branchId || "";
+
+      if (!role) {
+        throw new Error("User role not found after login");
+      }
+
       sessionStorage.setItem("token", token);
-      sessionStorage.setItem("role", user?.role || "");
-      sessionStorage.setItem("fullName", user?.fullName || "");
-      sessionStorage.setItem("branchId", user?.branchId || "");
+      sessionStorage.setItem("role", role);
+      sessionStorage.setItem("fullName", fullName);
+      sessionStorage.setItem("branchId", branchId);
 
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("role");
-      sessionStorage.removeItem("fullName");
-      sessionStorage.removeItem("branchId");
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("fullName");
+      localStorage.removeItem("branchId");
 
-      navigate(redirectByRole(user?.role), { replace: true });
+      navigate(redirectByRole(role), { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Login failed");
     } finally {
