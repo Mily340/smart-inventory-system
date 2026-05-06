@@ -1,6 +1,8 @@
 // frontend/src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import Home from "./pages/Home";
+
 import Login from "./pages/Login";
 import Users from "./pages/Users";
 
@@ -53,6 +55,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public */}
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/catalog/:id" element={<CatalogProduct />} />
@@ -189,9 +192,8 @@ export default function App() {
           }
         />
 
-        {/* Home */}
-        <Route path="/" element={<Navigate to="/catalog" replace />} />
-        <Route path="*" element={<Navigate to="/catalog" replace />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

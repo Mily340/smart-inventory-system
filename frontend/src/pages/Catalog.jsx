@@ -68,6 +68,8 @@ export default function Catalog() {
     sessionStorage.removeItem("role");
     sessionStorage.removeItem("fullName");
     sessionStorage.removeItem("branchId");
+    sessionStorage.removeItem("branchName");
+    sessionStorage.removeItem("branchIsActive");
     navigate("/catalog", { replace: true });
   };
 
@@ -98,6 +100,12 @@ export default function Catalog() {
     minHeight: 40,
   };
 
+  const navButtonStyle = {
+    borderRadius: 12,
+    fontWeight: 700,
+    padding: "7px 13px",
+  };
+
   return (
     <div style={pageStyle}>
       <div className="container" style={shellStyle}>
@@ -121,11 +129,20 @@ export default function Catalog() {
           </div>
 
           <div className="d-flex gap-2 flex-wrap">
+            <button
+              className="btn btn-outline-primary btn-sm"
+              style={navButtonStyle}
+              onClick={() => navigate("/")}
+            >
+              <i className="bi bi-house-door me-1"></i>
+              Home
+            </button>
+
             {token ? (
               <>
                 <button
                   className="btn btn-outline-secondary btn-sm"
-                  style={{ borderRadius: 12, fontWeight: 700, padding: "7px 13px" }}
+                  style={navButtonStyle}
                   onClick={() => navigate(dashboardPath)}
                 >
                   Dashboard
@@ -133,7 +150,7 @@ export default function Catalog() {
 
                 <button
                   className="btn btn-outline-secondary btn-sm"
-                  style={{ borderRadius: 12, fontWeight: 700, padding: "7px 13px" }}
+                  style={navButtonStyle}
                   onClick={logout}
                 >
                   Logout
@@ -142,7 +159,7 @@ export default function Catalog() {
             ) : (
               <button
                 className="btn btn-outline-secondary btn-sm"
-                style={{ borderRadius: 12, fontWeight: 700, padding: "7px 13px" }}
+                style={navButtonStyle}
                 onClick={() => navigate("/login")}
               >
                 Staff Login

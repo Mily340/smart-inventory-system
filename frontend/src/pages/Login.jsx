@@ -96,18 +96,55 @@ export default function Login() {
     }
   };
 
+  const navButtonStyle = {
+    borderRadius: 10,
+    fontWeight: 700,
+    padding: "7px 12px",
+  };
+
   return (
     <div className="container" style={{ maxWidth: 420, marginTop: 80 }}>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="m-0">Login</h4>
+      <div
+        className="d-grid align-items-center mb-4"
+        style={{
+          gridTemplateColumns: "1fr auto 1fr",
+          columnGap: 12,
+        }}
+      >
+        <div className="d-flex justify-content-start">
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            style={navButtonStyle}
+            onClick={() => navigate("/")}
+          >
+            <i className="bi bi-house-door me-1"></i>
+            Home
+          </button>
+        </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          onClick={() => navigate("/catalog")}
+        <h4
+          className="m-0 text-center"
+          style={{
+            fontWeight: 800,
+            color: "#0F172A",
+            letterSpacing: 0.2,
+          }}
         >
-          Catalog
-        </button>
+          Login
+        </h4>
+
+        <div className="d-flex justify-content-end">
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            style={navButtonStyle}
+            onClick={() => navigate("/catalog")}
+          >
+            <i className="bi bi-grid me-1"></i>
+            Catalog
+          </button>
+        </div>
       </div>
 
       {error ? <div className="alert alert-danger">{error}</div> : null}
