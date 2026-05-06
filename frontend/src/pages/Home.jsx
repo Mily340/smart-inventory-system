@@ -178,7 +178,7 @@ export default function Home() {
                 }}
               >
                 <i className="bi bi-stars"></i>
-                Smart Business Operations
+                Smart Business Operations Test 
               </div>
 
               <h1
