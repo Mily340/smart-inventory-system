@@ -5,6 +5,9 @@ import ApiError from "../utils/ApiError.js";
 const BRANCH_SCOPED_ROLES = ["BRANCH_MANAGER", "BRANCH_STAFF"];
 const TRANSFER_ADMIN_ROLES = ["SUPER_ADMIN", "INVENTORY_OFFICER"];
 
+const INACTIVE_BRANCH_TRANSFER_MESSAGE =
+  "Source or receiving branch is inactive. Please activate the branch before creating or processing a transfer.";
+
 const ensurePositiveInt = (value, fieldName) => {
   const n = Number(value);
 
@@ -13,6 +16,20 @@ const ensurePositiveInt = (value, fieldName) => {
   }
 
   return n;
+};
+
+const ensureActiveTransferBranches = (fromBranch, toBranch) => {
+  if (!fromBranch) {
+    throw new ApiError(400, "Invalid fromBranchId");
+  }
+
+  if (!toBranch) {
+    throw new ApiError(400, "Invalid toBranchId");
+  }
+
+  if (fromBranch.isActive === false || toBranch.isActive === false) {
+    throw new ApiError(403, INACTIVE_BRANCH_TRANSFER_MESSAGE);
+  }
 };
 
 const notifyTransfer = async (tx, transfer, title, message) => {
@@ -117,26 +134,32 @@ export const createTransferRequest = async ({ fromBranchId, toBranchId, items },
     where: { id: toBranchId },
   });
 
-  if (!fromBranch) {
-    throw new ApiError(400, "Invalid fromBranchId");
-  }
+  ensureActiveTransferBranches(fromBranch, toBranch);
 
-  if (!toBranch) {
-    throw new ApiError(400, "Invalid toBranchId");
-  }
+  const normalizedItems = [];
 
-  const normalizedItems = items.map((it, idx) => {
+  for (let idx = 0; idx < items.length; idx++) {
+    const it = items[idx];
+
     if (!it.productId) {
       throw new ApiError(400, `items[${idx}].productId is required`);
     }
 
+    const product = await prisma.product.findUnique({
+      where: { id: it.productId },
+    });
+
+    if (!product) {
+      throw new ApiError(400, `Invalid productId in items[${idx}]`);
+    }
+
     const qty = ensurePositiveInt(it.quantity, `items[${idx}].quantity`);
 
-    return {
+    normalizedItems.push({
       productId: it.productId,
       quantity: qty,
-    };
-  });
+    });
+  }
 
   return prisma.transferRequest.create({
     data: {
@@ -177,6 +200,8 @@ export const approveTransfer = async (id, user) => {
     if (transfer.status !== "PENDING") {
       throw new ApiError(400, "Only PENDING requests can be approved");
     }
+
+    ensureActiveTransferBranches(transfer.fromBranch, transfer.toBranch);
 
     const updated = await tx.transferRequest.update({
       where: { id },
@@ -266,6 +291,8 @@ export const dispatchTransfer = async (id, user) => {
     if (transfer.status !== "APPROVED") {
       throw new ApiError(400, "Only APPROVED requests can be dispatched");
     }
+
+    ensureActiveTransferBranches(transfer.fromBranch, transfer.toBranch);
 
     for (const item of transfer.items) {
       const inv = await tx.inventory.findUnique({
@@ -363,6 +390,8 @@ export const receiveTransfer = async (id, user) => {
     if (transfer.status !== "DISPATCHED") {
       throw new ApiError(400, "Only DISPATCHED transfers can be received");
     }
+
+    ensureActiveTransferBranches(transfer.fromBranch, transfer.toBranch);
 
     for (const item of transfer.items) {
       await tx.inventory.upsert({

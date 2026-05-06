@@ -71,6 +71,7 @@ export default function Transfers() {
 
   const role = sessionStorage.getItem("role") || "";
   const assignedBranchId = sessionStorage.getItem("branchId") || "";
+  const assignedBranchNameFromSession = sessionStorage.getItem("branchName") || "";
 
   const isSuperAdmin = role === "SUPER_ADMIN";
   const isInventoryOfficer = role === "INVENTORY_OFFICER";
@@ -81,6 +82,18 @@ export default function Transfers() {
   const isBranchScoped = isBranchManager || isBranchStaff;
   const canCreateTransfer = isTransferAdmin || isBranchManager;
 
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.isActive !== false),
+    [branches]
+  );
+
+  const assignedBranch = useMemo(
+    () => branches.find((b) => b.id === assignedBranchId) || null,
+    [branches, assignedBranchId]
+  );
+
+  const assignedBranchIsActive = assignedBranch ? assignedBranch.isActive !== false : true;
+
   const finalToBranchId = isBranchManager ? assignedBranchId : toBranchId;
 
   const handleUnauthorized = (msg) => {
@@ -89,6 +102,8 @@ export default function Transfers() {
       sessionStorage.removeItem("role");
       sessionStorage.removeItem("fullName");
       sessionStorage.removeItem("branchId");
+      sessionStorage.removeItem("branchName");
+      sessionStorage.removeItem("branchIsActive");
       navigate("/login");
       return true;
     }
@@ -99,17 +114,26 @@ export default function Transfers() {
   const getBranchLabel = (id) => {
     const b = branches.find((x) => x.id === id);
     if (!b) return id ? "Assigned Branch" : "-";
-    return `${b.code ? `${b.code} - ` : ""}${b.name}`;
+
+    const statusText = b.isActive === false ? " (Inactive)" : "";
+    return `${b.code ? `${b.code} - ` : ""}${b.name}${statusText}`;
   };
 
-  const availableFromBranches = useMemo(() => {
-    return branches.filter((b) => b.id !== finalToBranchId);
-  }, [branches, finalToBranchId]);
+  const activeFromBranches = useMemo(() => {
+    return activeBranches.filter((b) => b.id !== finalToBranchId);
+  }, [activeBranches, finalToBranchId]);
+
+  const activeToBranches = useMemo(() => {
+    return activeBranches.filter((b) => b.id !== fromBranchId);
+  }, [activeBranches, fromBranchId]);
 
   const assignedBranchName = useMemo(() => {
-    const b = branches.find((x) => x.id === assignedBranchId);
-    return b ? `${b.code ? `${b.code} - ` : ""}${b.name}` : "Assigned Branch";
-  }, [branches, assignedBranchId]);
+    if (assignedBranch) {
+      return `${assignedBranch.code ? `${assignedBranch.code} - ` : ""}${assignedBranch.name}`;
+    }
+
+    return assignedBranchNameFromSession || "Assigned Branch";
+  }, [assignedBranch, assignedBranchNameFromSession]);
 
   const fetchAll = async () => {
     setError("");
@@ -129,11 +153,12 @@ export default function Transfers() {
         client.get("/transfers"),
       ]);
 
-      const b = bRes.data?.data || [];
+      const allBranches = bRes.data?.data || [];
+      const activeOnly = allBranches.filter((b) => b.isActive !== false);
       const p = pRes.data?.data || [];
       const t = tRes.data?.data || [];
 
-      setBranches(b);
+      setBranches(allBranches);
       setProducts(p);
       setTransfers(t);
 
@@ -142,23 +167,39 @@ export default function Transfers() {
       }
 
       if (isBranchManager) {
+        const assigned = allBranches.find((b) => b.id === assignedBranchId);
+
+        if (assigned && assigned.isActive === false) {
+          sessionStorage.setItem("branchIsActive", "false");
+          navigate("/branch-inactive", { replace: true });
+          return;
+        }
+
         setToBranchId(assignedBranchId);
 
-        const firstSourceBranch = b.find((branch) => branch.id !== assignedBranchId);
-        if (!fromBranchId && firstSourceBranch) {
-          setFromBranchId(firstSourceBranch.id);
-        }
+        const activeSourceBranches = activeOnly.filter((branch) => branch.id !== assignedBranchId);
+        const currentFromStillActive = activeSourceBranches.some(
+          (branch) => branch.id === fromBranchId
+        );
 
-        if (fromBranchId === assignedBranchId && firstSourceBranch) {
-          setFromBranchId(firstSourceBranch.id);
+        if (!currentFromStillActive) {
+          setFromBranchId(activeSourceBranches[0]?.id || "");
         }
       } else {
-        if (!fromBranchId && b.length > 0) {
-          setFromBranchId(b[0].id);
-        }
+        const currentFromStillActive = activeOnly.some((branch) => branch.id === fromBranchId);
+        const nextFromBranchId =
+          currentFromStillActive && fromBranchId ? fromBranchId : activeOnly[0]?.id || "";
 
-        if (!toBranchId && b.length > 1) {
-          setToBranchId(b[1].id);
+        const possibleToBranches = activeOnly.filter((branch) => branch.id !== nextFromBranchId);
+        const currentToStillActive = possibleToBranches.some((branch) => branch.id === toBranchId);
+        const nextToBranchId =
+          currentToStillActive && toBranchId ? toBranchId : possibleToBranches[0]?.id || "";
+
+        setFromBranchId(nextFromBranchId);
+        setToBranchId(nextToBranchId);
+
+        if (activeOnly.length < 2) {
+          setError("At least two active branches are required to create a transfer request.");
         }
       }
     } catch (err) {
@@ -181,10 +222,19 @@ export default function Transfers() {
     setToBranchId(assignedBranchId);
 
     if (fromBranchId === assignedBranchId) {
-      const firstSourceBranch = branches.find((b) => b.id !== assignedBranchId);
+      const firstSourceBranch = activeBranches.find((b) => b.id !== assignedBranchId);
       setFromBranchId(firstSourceBranch?.id || "");
     }
-  }, [assignedBranchId, branches, fromBranchId, isBranchManager]);
+  }, [assignedBranchId, activeBranches, fromBranchId, isBranchManager]);
+
+  useEffect(() => {
+    if (isBranchManager) return;
+    if (!fromBranchId) return;
+    if (toBranchId && toBranchId !== fromBranchId) return;
+
+    const firstToBranch = activeBranches.find((b) => b.id !== fromBranchId);
+    setToBranchId(firstToBranch?.id || "");
+  }, [fromBranchId, toBranchId, activeBranches, isBranchManager]);
 
   const createTransfer = async (e) => {
     e.preventDefault();
@@ -192,6 +242,24 @@ export default function Transfers() {
 
     if (!canCreateTransfer) {
       setError("You do not have permission to create transfer requests.");
+      return;
+    }
+
+    if (isBranchManager && !assignedBranchIsActive) {
+      setError("Your assigned branch is inactive. Transfer request cannot be created.");
+      return;
+    }
+
+    const fromBranch = branches.find((b) => b.id === fromBranchId);
+    const toBranch = branches.find((b) => b.id === finalToBranchId);
+
+    if (fromBranch && fromBranch.isActive === false) {
+      setError("Source branch is inactive. Please select an active branch.");
+      return;
+    }
+
+    if (toBranch && toBranch.isActive === false) {
+      setError("Receiving branch is inactive. Please select an active branch.");
       return;
     }
 
@@ -319,6 +387,15 @@ export default function Transfers() {
     return <span className="text-muted">—</span>;
   };
 
+  const canSubmitTransfer =
+    canCreateTransfer &&
+    fromBranchId &&
+    finalToBranchId &&
+    productId &&
+    fromBranchId !== finalToBranchId &&
+    activeBranches.length >= 2 &&
+    (!isBranchManager || assignedBranchIsActive);
+
   const pageWrapStyle = {
     marginTop: 18,
     paddingBottom: 26,
@@ -349,8 +426,8 @@ export default function Transfers() {
 
             <div className="text-muted" style={{ marginTop: 4 }}>
               {isBranchManager
-                ? "Create transfer requests for your assigned branch only."
-                : "Create and track stock transfer requests between branches."}
+                ? "Create transfer requests for your assigned active branch only."
+                : "Create and track stock transfer requests between active branches."}
             </div>
           </div>
 
@@ -387,8 +464,8 @@ export default function Transfers() {
                   </div>
                   <div className="text-muted" style={{ fontSize: 13 }}>
                     {isBranchManager
-                      ? "Receiving branch is locked to your assigned branch."
-                      : "Select source branch, receiving branch, product, and quantity."}
+                      ? "Receiving branch is locked to your assigned active branch."
+                      : "Only active branches are available for new transfer requests."}
                   </div>
                 </div>
 
@@ -424,8 +501,9 @@ export default function Transfers() {
                     value={fromBranchId}
                     onChange={(e) => setFromBranchId(e.target.value)}
                     required
+                    disabled={activeFromBranches.length === 0}
                   >
-                    {(isBranchManager ? availableFromBranches : branches).map((b) => (
+                    {activeFromBranches.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.code ? `${b.code} - ` : ""}
                         {b.name}
@@ -456,8 +534,9 @@ export default function Transfers() {
                       value={toBranchId}
                       onChange={(e) => setToBranchId(e.target.value)}
                       required
+                      disabled={activeToBranches.length === 0}
                     >
-                      {branches.map((b) => (
+                      {activeToBranches.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.code ? `${b.code} - ` : ""}
                           {b.name}
@@ -505,11 +584,16 @@ export default function Transfers() {
                       fontWeight: 800,
                       padding: "10px 12px",
                     }}
+                    disabled={!canSubmitTransfer}
                   >
                     Create
                   </button>
                 </div>
               </form>
+
+              <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+                New transfer requests can be created only between active branches.
+              </div>
             </div>
           </div>
         ) : null}
@@ -518,7 +602,7 @@ export default function Transfers() {
           <div className="card-body" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
-                {isBranchScoped ? "Branch Transfers" : "Recent Transfers"}
+                {isBranchScoped ? "Branch Transfers" : "Transfer List"}
               </div>
 
               <div className="text-muted" style={{ fontSize: 13 }}>
@@ -561,11 +645,17 @@ export default function Transfers() {
                         <td>
                           {t.fromBranch?.code ? `${t.fromBranch.code} - ` : ""}
                           {t.fromBranch?.name || "-"}
+                          {t.fromBranch?.isActive === false ? (
+                            <span className="text-muted small ms-1">(Inactive)</span>
+                          ) : null}
                         </td>
 
                         <td>
                           {t.toBranch?.code ? `${t.toBranch.code} - ` : ""}
                           {t.toBranch?.name || "-"}
+                          {t.toBranch?.isActive === false ? (
+                            <span className="text-muted small ms-1">(Inactive)</span>
+                          ) : null}
                         </td>
 
                         <td>
@@ -606,11 +696,11 @@ export default function Transfers() {
 
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
               {isBranchManager
-                ? "Branch Manager can request and receive transfers only for the assigned branch."
+                ? "Branch Manager can request and receive transfers only for the assigned active branch."
                 : isBranchStaff
                 ? "Branch Staff can view branch transfers only."
                 : isTransferAdmin
-                ? "Admin Staff can approve, reject, dispatch, and receive transfer requests."
+                ? "Admin Staff can approve, reject, dispatch, and receive transfer requests. New transfer requests require active branches."
                 : null}
             </div>
           </div>

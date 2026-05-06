@@ -88,15 +88,23 @@ export default function Inventory() {
 
   const role = sessionStorage.getItem("role") || "";
   const assignedBranchId = sessionStorage.getItem("branchId") || "";
+  const assignedBranchNameFromSession = sessionStorage.getItem("branchName") || "";
 
   const isBranchManager = role === "BRANCH_MANAGER";
   const isBranchStaff = role === "BRANCH_STAFF";
   const isBranchScoped = isBranchManager || isBranchStaff;
 
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.isActive !== false),
+    [branches]
+  );
+
   const selectedBranch = useMemo(
     () => branches.find((b) => b.id === branchId) || null,
     [branches, branchId]
   );
+
+  const selectedBranchIsActive = selectedBranch ? selectedBranch.isActive !== false : true;
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === productId) || null,
@@ -141,6 +149,8 @@ export default function Inventory() {
       sessionStorage.removeItem("role");
       sessionStorage.removeItem("fullName");
       sessionStorage.removeItem("branchId");
+      sessionStorage.removeItem("branchName");
+      sessionStorage.removeItem("branchIsActive");
       navigate("/login");
       return true;
     }
@@ -151,6 +161,14 @@ export default function Inventory() {
   const loadInventory = async (bId) => {
     if (!bId) {
       setInventory([]);
+      return;
+    }
+
+    const branch = branches.find((b) => b.id === bId);
+
+    if (branch && branch.isActive === false) {
+      setInventory([]);
+      setError("This branch is inactive. Please activate the branch before performing stock operations.");
       return;
     }
 
@@ -184,20 +202,57 @@ export default function Inventory() {
         client.get("/products"),
       ]);
 
-      const b = bRes.data?.data || [];
+      const allBranches = bRes.data?.data || [];
+      const activeOnly = allBranches.filter((b) => b.isActive !== false);
       const p = pRes.data?.data || [];
 
-      setBranches(b);
+      setBranches(isBranchScoped ? allBranches : activeOnly);
       setProducts(p);
 
-      const bId = isBranchScoped ? assignedBranchId : selectedBranchId || branchId || b[0]?.id || "";
-      setBranchId(bId);
+      let nextBranchId = "";
+
+      if (isBranchScoped) {
+        nextBranchId = assignedBranchId;
+
+        const assignedBranch = allBranches.find((b) => b.id === assignedBranchId);
+
+        if (assignedBranch && assignedBranch.isActive === false) {
+          sessionStorage.setItem("branchIsActive", "false");
+          navigate("/branch-inactive", { replace: true });
+          return;
+        }
+      } else {
+        const currentBranchStillActive = activeOnly.some((b) => b.id === branchId);
+        const selectedStillActive = activeOnly.some((b) => b.id === selectedBranchId);
+
+        nextBranchId = selectedStillActive
+          ? selectedBranchId
+          : currentBranchStillActive
+          ? branchId
+          : activeOnly[0]?.id || "";
+      }
+
+      setBranchId(nextBranchId);
 
       const currentProductExists = p.some((x) => x.id === productId);
       const nextProductId = currentProductExists ? productId : p[0]?.id || "";
       setProductId(nextProductId);
 
-      await loadInventory(bId);
+      if (nextBranchId) {
+        const invRes = await client.get(`/inventory?branchId=${nextBranchId}`);
+        const data = invRes.data?.data || [];
+
+        data.sort((a, b) => {
+          const nameA = a.product?.name || "";
+          const nameB = b.product?.name || "";
+          return nameA.localeCompare(nameB);
+        });
+
+        setInventory(data);
+      } else {
+        setInventory([]);
+        setError("No active branches available for inventory operations.");
+      }
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load inventory";
       setError(msg);
@@ -235,6 +290,7 @@ export default function Inventory() {
   const canDoQty =
     branchId &&
     productId &&
+    selectedBranchIsActive &&
     Number.isFinite(qtyNum) &&
     Number.isInteger(qtyNum) &&
     qtyNum > 0 &&
@@ -243,14 +299,29 @@ export default function Inventory() {
   const canDoReorder =
     branchId &&
     productId &&
+    selectedBranchIsActive &&
     Number.isFinite(reorderNum) &&
     Number.isInteger(reorderNum) &&
     reorderNum >= 0 &&
     !actionLoading;
 
+  const checkActiveBranchBeforeAction = () => {
+    const branch = branches.find((b) => b.id === branchId);
+
+    if (branch && branch.isActive === false) {
+      setError("This branch is inactive. Please activate the branch before performing stock operations.");
+      return false;
+    }
+
+    return true;
+  };
+
   const stockIn = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!checkActiveBranchBeforeAction()) return;
+
     setActionLoading(true);
 
     try {
@@ -273,6 +344,9 @@ export default function Inventory() {
   const stockOut = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!checkActiveBranchBeforeAction()) return;
+
     setActionLoading(true);
 
     try {
@@ -295,6 +369,9 @@ export default function Inventory() {
   const updateReorder = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!checkActiveBranchBeforeAction()) return;
+
     setActionLoading(true);
 
     try {
@@ -334,6 +411,10 @@ export default function Inventory() {
     borderRadius: 12,
   };
 
+  const branchLabel = selectedBranch
+    ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
+    : assignedBranchNameFromSession || "-";
+
   return (
     <>
       <NavBar />
@@ -346,8 +427,8 @@ export default function Inventory() {
             </h2>
             <div className="text-muted" style={{ marginTop: 4 }}>
               {isBranchScoped
-                ? "Manage stock operations for your assigned branch."
-                : "Manage stock operations, reorder levels, and branch inventory."}
+                ? "Manage stock operations for your assigned active branch."
+                : "Manage stock operations, reorder levels, and active branch inventory."}
             </div>
           </div>
 
@@ -357,11 +438,7 @@ export default function Inventory() {
               bg="#EFF6FF"
               border="#BFDBFE"
               label="Branch"
-              value={
-                selectedBranch
-                  ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
-                  : "-"
-              }
+              value={branchLabel}
             />
 
             <InfoPill
@@ -399,6 +476,12 @@ export default function Inventory() {
           </div>
         ) : null}
 
+        {selectedBranch && selectedBranch.isActive === false ? (
+          <div className="alert alert-warning" style={{ borderRadius: 14 }}>
+            This branch is inactive. Stock-in, stock-out, and reorder-level updates are disabled.
+          </div>
+        ) : null}
+
         <div className="card mb-3" style={panelStyle}>
           <div className="card-body" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -407,7 +490,7 @@ export default function Inventory() {
                   Select Branch & Product
                 </div>
                 <div className="text-muted" style={{ fontSize: 13 }}>
-                  Choose the branch and product before applying stock actions.
+                  Choose an active branch and product before applying stock actions.
                 </div>
               </div>
 
@@ -421,7 +504,7 @@ export default function Inventory() {
                   background: "rgba(255,255,255,.85)",
                 }}
               >
-                {isBranchScoped ? "Branch locked" : "Branch selectable"}
+                {isBranchScoped ? "Branch locked" : "Active branches only"}
               </span>
             </div>
           </div>
@@ -441,9 +524,7 @@ export default function Inventory() {
                       fontWeight: 700,
                     }}
                   >
-                    {selectedBranch
-                      ? `${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
-                      : "Assigned Branch"}
+                    {branchLabel}
                   </div>
                 ) : (
                   <select
@@ -451,8 +532,9 @@ export default function Inventory() {
                     style={inputStyle}
                     value={branchId}
                     onChange={changeBranch}
+                    disabled={activeBranches.length === 0}
                   >
-                    {branches.map((b) => (
+                    {activeBranches.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.code ? `${b.code} - ` : ""}
                         {b.name}
@@ -469,6 +551,7 @@ export default function Inventory() {
                   style={inputStyle}
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
+                  disabled={products.length === 0}
                 >
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -567,7 +650,7 @@ export default function Inventory() {
                       background: "rgba(255,255,255,.85)",
                     }}
                   >
-                    Selected product only
+                    Active branch required
                   </span>
                 </div>
               </div>
@@ -583,6 +666,7 @@ export default function Inventory() {
                       value={qty}
                       onChange={(e) => setQty(e.target.value)}
                       inputMode="numeric"
+                      disabled={!selectedBranchIsActive}
                     />
                   </div>
 
@@ -627,6 +711,7 @@ export default function Inventory() {
                       value={reorderLevel}
                       onChange={(e) => setReorderLevel(e.target.value)}
                       inputMode="numeric"
+                      disabled={!selectedBranchIsActive}
                     />
                   </div>
 
@@ -704,7 +789,7 @@ export default function Inventory() {
                     {inventory.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="text-center text-muted py-4">
-                          No inventory records found for this branch.
+                          No inventory records found for this active branch.
                         </td>
                       </tr>
                     ) : null}
@@ -714,7 +799,7 @@ export default function Inventory() {
             )}
 
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              Low stock appears when quantity is equal to or below the reorder level.
+              Stock operations are available only for active branches. Historical inventory data can remain stored for inactive branches.
             </div>
           </div>
         </div>

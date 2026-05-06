@@ -4,6 +4,9 @@ import ApiError from "../utils/ApiError.js";
 
 const BRANCH_SCOPED_ROLES = ["BRANCH_MANAGER", "BRANCH_STAFF"];
 
+const INACTIVE_BRANCH_OPERATION_MESSAGE =
+  "This branch is inactive. Please activate the branch before performing this operation.";
+
 const ensurePositiveInt = (value, fieldName) => {
   const n = Number(value);
 
@@ -39,6 +42,16 @@ const ensureUserBranchAccess = (user, branchId) => {
 
   if (user.branchId !== branchId) {
     throw new ApiError(403, "You can only access orders for your assigned branch");
+  }
+};
+
+const ensureActiveBranch = (branch) => {
+  if (!branch) {
+    throw new ApiError(400, "Invalid branchId");
+  }
+
+  if (branch.isActive === false) {
+    throw new ApiError(403, INACTIVE_BRANCH_OPERATION_MESSAGE);
   }
 };
 
@@ -87,9 +100,7 @@ export const createOrder = async ({ distributorId, branchId, items }, user) => {
       where: { id: branchId },
     });
 
-    if (!branch) {
-      throw new ApiError(400, "Invalid branchId");
-    }
+    ensureActiveBranch(branch);
 
     const normalizedItems = [];
 
@@ -215,6 +226,10 @@ export const updateOrderStatus = async (id, { status }, user) => {
     }
 
     ensureUserBranchAccess(user, order.branchId);
+
+    if (["APPROVED", "PACKED", "DISPATCHED", "DELIVERED"].includes(status)) {
+      ensureActiveBranch(order.branch);
+    }
 
     if (user?.role === "BRANCH_STAFF") {
       if (status !== "CANCELLED") {

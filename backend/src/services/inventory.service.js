@@ -1,9 +1,10 @@
+// backend/src/services/inventory.service.js
 import prisma from "../db/prisma.js";
 import ApiError from "../utils/ApiError.js";
 
-/**
- * Helpers
- */
+const INACTIVE_BRANCH_OPERATION_MESSAGE =
+  "This branch is inactive. Please activate the branch before performing this operation.";
+
 const ensurePositiveInt = (value, fieldName) => {
   const n = Number(value);
   if (!Number.isInteger(n) || n <= 0) {
@@ -12,7 +13,16 @@ const ensurePositiveInt = (value, fieldName) => {
   return n;
 };
 
-// Create a LOW_STOCK notification when qty <= reorderLevel
+const ensureActiveBranch = (branch) => {
+  if (!branch) {
+    throw new ApiError(400, "Invalid branchId");
+  }
+
+  if (branch.isActive === false) {
+    throw new ApiError(403, INACTIVE_BRANCH_OPERATION_MESSAGE);
+  }
+};
+
 const createLowStockNotificationIfNeeded = async (tx, branchId, productId) => {
   const inv = await tx.inventory.findUnique({
     where: { branchId_productId: { branchId, productId } },
@@ -51,7 +61,7 @@ export const stockIn = async ({ branchId, productId, quantity, reason }, userId)
 
   return prisma.$transaction(async (tx) => {
     const branch = await tx.branch.findUnique({ where: { id: branchId } });
-    if (!branch) throw new ApiError(400, "Invalid branchId");
+    ensureActiveBranch(branch);
 
     const product = await tx.product.findUnique({ where: { id: productId } });
     if (!product) throw new ApiError(400, "Invalid productId");
@@ -86,7 +96,7 @@ export const stockOut = async ({ branchId, productId, quantity, reason }, userId
 
   return prisma.$transaction(async (tx) => {
     const branch = await tx.branch.findUnique({ where: { id: branchId } });
-    if (!branch) throw new ApiError(400, "Invalid branchId");
+    ensureActiveBranch(branch);
 
     const product = await tx.product.findUnique({ where: { id: productId } });
     if (!product) throw new ApiError(400, "Invalid productId");
@@ -130,7 +140,7 @@ export const adjustStock = async ({ branchId, productId, newQuantity, reason }, 
 
   return prisma.$transaction(async (tx) => {
     const branch = await tx.branch.findUnique({ where: { id: branchId } });
-    if (!branch) throw new ApiError(400, "Invalid branchId");
+    ensureActiveBranch(branch);
 
     const product = await tx.product.findUnique({ where: { id: productId } });
     if (!product) throw new ApiError(400, "Invalid productId");
@@ -167,6 +177,9 @@ export const updateReorderLevel = async ({ branchId, productId, reorderLevel }) 
   }
 
   return prisma.$transaction(async (tx) => {
+    const branch = await tx.branch.findUnique({ where: { id: branchId } });
+    ensureActiveBranch(branch);
+
     const inv = await tx.inventory.findUnique({
       where: { branchId_productId: { branchId, productId } },
     });
