@@ -237,9 +237,10 @@ export default function Home() {
   };
 
   const shellStyle = {
-    maxWidth: 1140,
+    width: "calc(100% - 48px)",
+    maxWidth: 1600,
     margin: "0 auto",
-    padding: "16px 16px 24px",
+    padding: "16px 0 24px",
     position: "relative",
     zIndex: 2,
   };
