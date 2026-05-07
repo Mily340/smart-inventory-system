@@ -1,8 +1,38 @@
 // frontend/src/pages/Home.jsx
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import client from "../api/client";
+
+const FALLBACK_IMG = "https://via.placeholder.com/500x320?text=Product";
 
 export default function Home() {
   const navigate = useNavigate();
+
+  const [products, setProducts] = useState([]);
+  const [productLoading, setProductLoading] = useState(true);
+
+  const fetchPreviewProducts = async () => {
+    setProductLoading(true);
+
+    try {
+      const res = await client.get("/public/products");
+      setProducts(res.data?.data || []);
+    } catch {
+      setProducts([]);
+    } finally {
+      setProductLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPreviewProducts();
+  }, []);
+
+  const previewProducts = useMemo(() => {
+    return (products || [])
+      .filter((p) => p.imageUrl)
+      .slice(0, 6);
+  }, [products]);
 
   const features = [
     {
@@ -342,10 +372,14 @@ export default function Home() {
             animation-delay: 1.2s;
           }
 
-          .si-sticky-overview {
-            position: sticky;
-            top: 18px;
-            animation: siFloatSoft 6s ease-in-out infinite;
+          .si-product-preview-card {
+            animation: siFloatSoft 5.4s ease-in-out infinite;
+            transition: transform 0.24s ease, box-shadow 0.24s ease;
+          }
+
+          .si-product-preview-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14) !important;
           }
 
           .si-home-nav {
@@ -388,23 +422,17 @@ export default function Home() {
             font-weight: 750;
           }
 
-          @media (max-width: 991px) {
-            .si-sticky-overview {
-              position: relative;
-              top: auto;
-            }
-          }
-
           @media (prefers-reduced-motion: reduce) {
             .si-home-blob,
             .si-floating-card,
-            .si-sticky-overview,
+            .si-product-preview-card,
             .si-animate-section {
               animation: none !important;
             }
 
             .si-hover-card,
-            .si-hover-card:hover {
+            .si-hover-card:hover,
+            .si-product-preview-card:hover {
               transition: none !important;
               transform: none !important;
             }
@@ -556,7 +584,6 @@ export default function Home() {
             <div className="col-12 col-lg-5">
               <div className="p-3 p-lg-4">
                 <div
-                  className="si-sticky-overview"
                   style={{
                     borderRadius: 22,
                     border: "1px solid rgba(148,163,184,.28)",
@@ -567,69 +594,92 @@ export default function Home() {
                 >
                   <div className="d-flex align-items-center justify-content-between mb-3">
                     <div>
-                      <div style={{ fontWeight: 950, fontSize: 17 }}>System Overview</div>
+                      <div style={{ fontWeight: 950, fontSize: 17 }}>Product Preview</div>
                       <div className="text-muted" style={{ fontSize: 12 }}>
-                        Live operational areas
+                        Sample products from the catalog
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 14,
-                        background: "#EEF2FF",
-                        color: "#4F46E5",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 18,
-                      }}
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      style={{ borderRadius: 999, fontWeight: 800, padding: "6px 10px" }}
+                      onClick={() => navigate("/catalog")}
                     >
-                      <i className="bi bi-window-sidebar"></i>
-                    </div>
+                      View All
+                    </button>
                   </div>
 
-                  {[
-                    ["Products", "Catalog, category, SKU, price, and stock details", "bi-box"],
-                    ["Inventory", "Stock-in, stock-out, adjustment, and reorder level", "bi-stack"],
-                    ["Transfers", "Request, approval, dispatch, and receiving flow", "bi-arrow-left-right"],
-                    ["Orders", "Distributor orders, status workflow, and invoice", "bi-receipt"],
-                  ].map(([title, text, icon], index) => (
+                  {productLoading ? (
                     <div
-                      key={title}
-                      className="d-flex align-items-start gap-3 mb-2 si-hover-card"
+                      className="text-center text-muted py-5"
                       style={{
-                        padding: "10px",
-                        borderRadius: 14,
-                        background: index % 2 === 0 ? "#F8FAFC" : "#FFFFFF",
-                        border: "1px solid rgba(226,232,240,.90)",
+                        borderRadius: 16,
+                        border: "1px dashed rgba(148,163,184,.45)",
+                        background: "rgba(248,250,252,.8)",
                       }}
                     >
-                      <div
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 11,
-                          background: "#DBEAFE",
-                          color: "#1D4ED8",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flex: "0 0 auto",
-                        }}
-                      >
-                        <i className={`bi ${icon}`}></i>
-                      </div>
-
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 950 }}>{title}</div>
-                        <div className="text-muted" style={{ fontSize: 11, lineHeight: 1.45 }}>
-                          {text}
-                        </div>
-                      </div>
+                      Loading products...
                     </div>
-                  ))}
+                  ) : (
+                    <div className="row g-2">
+                      {(previewProducts.length ? previewProducts : products.slice(0, 6)).map(
+                        (p, index) => (
+                          <div className="col-6" key={p.id || index}>
+                            <div
+                              className={`si-product-preview-card si-floating-card-delay-${
+                                index % 4
+                              }`}
+                              style={{
+                                height: index === 0 ? 138 : 112,
+                                borderRadius: 16,
+                                overflow: "hidden",
+                                border: "1px solid rgba(226,232,240,.95)",
+                                background: "#F8FAFC",
+                                boxShadow: "0 9px 18px rgba(15,23,42,.07)",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => navigate(`/catalog/${p.id}`)}
+                              title={p.name || "Product"}
+                            >
+                              <img
+                                src={p.imageUrl || FALLBACK_IMG}
+                                alt={p.name || "Product"}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                  display: "block",
+                                }}
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => {
+                                  if (e.currentTarget.src !== FALLBACK_IMG) {
+                                    e.currentTarget.src = FALLBACK_IMG;
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      )}
+
+                      {!products.length ? (
+                        <div className="col-12">
+                          <div
+                            className="text-center text-muted py-5"
+                            style={{
+                              borderRadius: 16,
+                              border: "1px dashed rgba(148,163,184,.45)",
+                              background: "rgba(248,250,252,.8)",
+                            }}
+                          >
+                            No catalog images available.
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
 
                   <div
                     className="mt-3"
@@ -642,7 +692,7 @@ export default function Home() {
                     }}
                   >
                     <div style={{ fontSize: 12, fontWeight: 900, color: "#1E40AF" }}>
-                      Designed for controlled inventory visibility and organized branch operations.
+                      Public preview only. Stock and internal inventory details remain protected.
                     </div>
                   </div>
                 </div>
@@ -665,20 +715,14 @@ export default function Home() {
                   A centralized platform for smarter inventory operations
                 </h2>
 
-                <p
-                  className="text-muted mt-2 mb-0"
-                  style={{ fontSize: 13, lineHeight: 1.7 }}
-                >
+                <p className="text-muted mt-2 mb-0" style={{ fontSize: 13, lineHeight: 1.7 }}>
                   The Smart Inventory System is designed to simplify multi-branch inventory
                   and distribution management. It helps an organization monitor stock,
                   manage products, process branch transfers, handle distributor orders, and
                   generate reports through a secure role-based web platform.
                 </p>
 
-                <p
-                  className="text-muted mt-2 mb-0"
-                  style={{ fontSize: 13, lineHeight: 1.7 }}
-                >
+                <p className="text-muted mt-2 mb-0" style={{ fontSize: 13, lineHeight: 1.7 }}>
                   The system improves visibility, reduces manual tracking, and keeps branch
                   operations organized by showing updated inventory, transfer activity,
                   order status, notifications, reports, and invoice information from one place.
@@ -724,10 +768,7 @@ export default function Home() {
                               {item.title}
                             </div>
 
-                            <div
-                              className="text-muted"
-                              style={{ fontSize: 12, lineHeight: 1.5 }}
-                            >
+                            <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
                               {item.text}
                             </div>
                           </div>
@@ -1167,9 +1208,7 @@ export default function Home() {
                 fontSize: 12,
               }}
             >
-              <div>
-                © {new Date().getFullYear()} Smart Inventory System. All rights reserved.
-              </div>
+              <div>© {new Date().getFullYear()} Smart Inventory System. All rights reserved.</div>
 
               <div className="d-flex flex-wrap gap-3">
                 <span>Role-Based Access</span>
