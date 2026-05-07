@@ -10,6 +10,7 @@ export default function Home() {
 
   const [products, setProducts] = useState([]);
   const [productLoading, setProductLoading] = useState(true);
+  const [activeProductIndex, setActiveProductIndex] = useState(0);
 
   const fetchPreviewProducts = async () => {
     setProductLoading(true);
@@ -29,10 +30,35 @@ export default function Home() {
   }, []);
 
   const previewProducts = useMemo(() => {
-    return (products || [])
-      .filter((p) => p.imageUrl)
-      .slice(0, 6);
+    const withImages = (products || []).filter((p) => p.imageUrl).slice(0, 6);
+    return withImages.length ? withImages : (products || []).slice(0, 6);
   }, [products]);
+
+  const activeProduct = previewProducts[activeProductIndex] || null;
+  const nextProduct =
+    previewProducts.length > 1
+      ? previewProducts[(activeProductIndex + 1) % previewProducts.length]
+      : null;
+  const previousProduct =
+    previewProducts.length > 1
+      ? previewProducts[
+          (activeProductIndex - 1 + previewProducts.length) % previewProducts.length
+        ]
+      : null;
+
+  useEffect(() => {
+    setActiveProductIndex(0);
+  }, [previewProducts.length]);
+
+  useEffect(() => {
+    if (previewProducts.length <= 1) return;
+
+    const timer = setInterval(() => {
+      setActiveProductIndex((prev) => (prev + 1) % previewProducts.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [previewProducts.length]);
 
   const features = [
     {
@@ -304,6 +330,33 @@ export default function Home() {
             }
           }
 
+          @keyframes siProductFloatIn {
+            0% {
+              opacity: 0;
+              transform: translateX(42px) translateY(18px) scale(0.94) rotate(1deg);
+              filter: blur(3px);
+            }
+            55% {
+              opacity: 1;
+              transform: translateX(-4px) translateY(-4px) scale(1.02) rotate(0deg);
+              filter: blur(0);
+            }
+            100% {
+              opacity: 1;
+              transform: translateX(0) translateY(0) scale(1) rotate(0deg);
+              filter: blur(0);
+            }
+          }
+
+          @keyframes siProductBackFloat {
+            0%, 100% {
+              transform: translateY(0) rotate(-3deg);
+            }
+            50% {
+              transform: translateY(-8px) rotate(-2deg);
+            }
+          }
+
           .si-home-blob {
             position: absolute;
             border-radius: 999px;
@@ -372,14 +425,99 @@ export default function Home() {
             animation-delay: 1.2s;
           }
 
-          .si-product-preview-card {
-            animation: siFloatSoft 5.4s ease-in-out infinite;
-            transition: transform 0.24s ease, box-shadow 0.24s ease;
+          .si-product-stage {
+            position: relative;
+            height: 340px;
+            border-radius: 22px;
+            overflow: visible;
+            padding: 18px;
+            background:
+              radial-gradient(circle at top left, rgba(219,234,254,.75), transparent 44%),
+              radial-gradient(circle at bottom right, rgba(221,214,254,.68), transparent 46%),
+              rgba(248,250,252,.78);
+            border: 1px solid rgba(226,232,240,.95);
           }
 
-          .si-product-preview-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14) !important;
+          .si-product-back-card {
+            position: absolute;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(226,232,240,.95);
+            background: #F8FAFC;
+            box-shadow: 0 10px 22px rgba(15,23,42,.08);
+            pointer-events: none;
+            animation: siProductBackFloat 5.5s ease-in-out infinite;
+          }
+
+          .si-product-back-card.one {
+            width: 66%;
+            height: 68%;
+            top: 24px;
+            left: 22px;
+            opacity: 0.34;
+            transform: rotate(-4deg);
+          }
+
+          .si-product-back-card.two {
+            width: 60%;
+            height: 58%;
+            right: 18px;
+            bottom: 22px;
+            opacity: 0.25;
+            transform: rotate(4deg);
+            animation-delay: 0.8s;
+          }
+
+          .si-product-main-window {
+            position: relative;
+            z-index: 3;
+            height: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #F8FAFC;
+            border: 1px solid rgba(255,255,255,.86);
+            box-shadow: 0 18px 38px rgba(15,23,42,.18);
+            cursor: pointer;
+            animation: siProductFloatIn 0.78s ease both;
+          }
+
+          .si-product-main-window:hover {
+            box-shadow: 0 22px 46px rgba(15,23,42,.22);
+            transform: translateY(-3px);
+          }
+
+          .si-product-slider-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+
+          .si-product-glass-label {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 14px;
+            border-radius: 16px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,.76);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,.72);
+            box-shadow: 0 8px 18px rgba(15,23,42,.10);
+          }
+
+          .si-product-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(148,163,184,.55);
+            transition: width 0.2s ease, background 0.2s ease;
+          }
+
+          .si-product-dot.active {
+            width: 24px;
+            background: #4F46E5;
           }
 
           .si-home-nav {
@@ -422,17 +560,25 @@ export default function Home() {
             font-weight: 750;
           }
 
+          @media (max-width: 575px) {
+            .si-product-stage {
+              height: 280px;
+              padding: 14px;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .si-home-blob,
             .si-floating-card,
-            .si-product-preview-card,
-            .si-animate-section {
+            .si-animate-section,
+            .si-product-main-window,
+            .si-product-back-card {
               animation: none !important;
             }
 
             .si-hover-card,
             .si-hover-card:hover,
-            .si-product-preview-card:hover {
+            .si-product-main-window:hover {
               transition: none !important;
               transform: none !important;
             }
@@ -445,7 +591,6 @@ export default function Home() {
       <div className="si-home-blob si-home-blob-three"></div>
 
       <div style={shellStyle}>
-        {/* Top Navigation */}
         <div
           className="si-home-nav d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"
           style={navStyle}
@@ -489,7 +634,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Hero Section */}
         <section className="mb-3 si-animate-section" style={heroStyle}>
           <div className="si-hero-glow"></div>
 
@@ -596,7 +740,7 @@ export default function Home() {
                     <div>
                       <div style={{ fontWeight: 950, fontSize: 17 }}>Product Preview</div>
                       <div className="text-muted" style={{ fontSize: 12 }}>
-                        Sample products from the catalog
+                        Floating catalog showcase
                       </div>
                     </div>
 
@@ -621,63 +765,112 @@ export default function Home() {
                     >
                       Loading products...
                     </div>
-                  ) : (
-                    <div className="row g-2">
-                      {(previewProducts.length ? previewProducts : products.slice(0, 6)).map(
-                        (p, index) => (
-                          <div className="col-6" key={p.id || index}>
-                            <div
-                              className={`si-product-preview-card si-floating-card-delay-${
-                                index % 4
-                              }`}
+                  ) : activeProduct ? (
+                    <>
+                      <div className="si-product-stage">
+                        {previousProduct ? (
+                          <div className="si-product-back-card one">
+                            <img
+                              src={previousProduct.imageUrl || FALLBACK_IMG}
+                              alt=""
                               style={{
-                                height: index === 0 ? 138 : 112,
-                                borderRadius: 16,
-                                overflow: "hidden",
-                                border: "1px solid rgba(226,232,240,.95)",
-                                background: "#F8FAFC",
-                                boxShadow: "0 9px 18px rgba(15,23,42,.07)",
-                                cursor: "pointer",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                display: "block",
                               }}
-                              onClick={() => navigate(`/catalog/${p.id}`)}
-                              title={p.name || "Product"}
+                              onError={(e) => {
+                                if (e.currentTarget.src !== FALLBACK_IMG) {
+                                  e.currentTarget.src = FALLBACK_IMG;
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : null}
+
+                        {nextProduct ? (
+                          <div className="si-product-back-card two">
+                            <img
+                              src={nextProduct.imageUrl || FALLBACK_IMG}
+                              alt=""
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                display: "block",
+                              }}
+                              onError={(e) => {
+                                if (e.currentTarget.src !== FALLBACK_IMG) {
+                                  e.currentTarget.src = FALLBACK_IMG;
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : null}
+
+                        <div
+                          key={activeProduct.id || activeProductIndex}
+                          className="si-product-main-window"
+                          onClick={() => navigate(`/catalog/${activeProduct.id}`)}
+                          title={activeProduct.name || "Product"}
+                        >
+                          <img
+                            className="si-product-slider-image"
+                            src={activeProduct.imageUrl || FALLBACK_IMG}
+                            alt={activeProduct.name || "Product"}
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => {
+                              if (e.currentTarget.src !== FALLBACK_IMG) {
+                                e.currentTarget.src = FALLBACK_IMG;
+                              }
+                            }}
+                          />
+
+                          <div className="si-product-glass-label">
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 950,
+                                color: "#0F172A",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
                             >
-                              <img
-                                src={p.imageUrl || FALLBACK_IMG}
-                                alt={p.name || "Product"}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                  display: "block",
-                                }}
-                                loading="lazy"
-                                decoding="async"
-                                onError={(e) => {
-                                  if (e.currentTarget.src !== FALLBACK_IMG) {
-                                    e.currentTarget.src = FALLBACK_IMG;
-                                  }
-                                }}
-                              />
+                              {activeProduct.name || "Catalog Product"}
+                            </div>
+                            <div className="text-muted" style={{ fontSize: 11, fontWeight: 700 }}>
+                              Click to view details
                             </div>
                           </div>
-                        )
-                      )}
-
-                      {!products.length ? (
-                        <div className="col-12">
-                          <div
-                            className="text-center text-muted py-5"
-                            style={{
-                              borderRadius: 16,
-                              border: "1px dashed rgba(148,163,184,.45)",
-                              background: "rgba(248,250,252,.8)",
-                            }}
-                          >
-                            No catalog images available.
-                          </div>
                         </div>
-                      ) : null}
+                      </div>
+
+                      <div className="d-flex justify-content-center align-items-center gap-2 mt-3">
+                        {previewProducts.map((p, index) => (
+                          <button
+                            key={p.id || index}
+                            type="button"
+                            className={`si-product-dot ${
+                              index === activeProductIndex ? "active" : ""
+                            }`}
+                            aria-label={`Show product ${index + 1}`}
+                            onClick={() => setActiveProductIndex(index)}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      className="text-center text-muted py-5"
+                      style={{
+                        borderRadius: 16,
+                        border: "1px dashed rgba(148,163,184,.45)",
+                        background: "rgba(248,250,252,.8)",
+                      }}
+                    >
+                      No catalog images available.
                     </div>
                   )}
 
@@ -692,7 +885,7 @@ export default function Home() {
                     }}
                   >
                     <div style={{ fontSize: 12, fontWeight: 900, color: "#1E40AF" }}>
-                      Public preview only. Stock and internal inventory details remain protected.
+                      Explore quality products selected to meet your daily business needs.
                     </div>
                   </div>
                 </div>
@@ -701,7 +894,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* About System */}
+        {/* Rest of Home page remains unchanged */}
         <section className="mb-3 si-animate-section">
           <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
             <div className="row g-3 align-items-center">
@@ -782,7 +975,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Why Needed */}
         <section className="mb-3 si-animate-section">
           <div className="row g-3">
             <div className="col-12 col-lg-4">
@@ -858,7 +1050,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Benefits */}
         <section className="mb-3 si-animate-section">
           <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
             <div>
@@ -900,7 +1091,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Key Modules */}
         <section className="mb-3 si-animate-section">
           <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
             <div>
@@ -938,7 +1128,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Workflow */}
         <section className="mb-3 si-animate-section">
           <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
@@ -996,7 +1185,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Professional Footer */}
         <footer className="si-animate-section" style={footerStyle}>
           <div
             style={{
@@ -1180,7 +1368,7 @@ export default function Home() {
 
                 <div style={{ color: "rgba(255,255,255,.78)", fontSize: 13, lineHeight: 1.8 }}>
                   <div>
-                    <strong style={{ color: "#FFFFFF" }}>Developer:</strong>
+                    <strong style={{ color: "#FFFFFF" }}>Developed By:</strong>
                     <br />
                     Sumaiya Islam Mily
                   </div>
