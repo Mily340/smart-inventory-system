@@ -30,8 +30,37 @@ export default function Home() {
   }, []);
 
   const previewProducts = useMemo(() => {
-    const withImages = (products || []).filter((p) => p.imageUrl).slice(0, 6);
-    return withImages.length ? withImages : (products || []).slice(0, 6);
+    const productList = products || [];
+    const imageProducts = productList.filter((p) => p.imageUrl);
+    const sourceProducts = imageProducts.length ? imageProducts : productList;
+
+    const selected = [];
+    const usedCategoryIds = new Set();
+    const usedProductIds = new Set();
+
+    sourceProducts.forEach((product) => {
+      const categoryKey = product.categoryId || product.category?.id || product.category?.name;
+
+      if (
+        categoryKey &&
+        !usedCategoryIds.has(categoryKey) &&
+        !usedProductIds.has(product.id) &&
+        selected.length < 8
+      ) {
+        selected.push(product);
+        usedCategoryIds.add(categoryKey);
+        usedProductIds.add(product.id);
+      }
+    });
+
+    sourceProducts.forEach((product) => {
+      if (!usedProductIds.has(product.id) && selected.length < 8) {
+        selected.push(product);
+        usedProductIds.add(product.id);
+      }
+    });
+
+    return selected;
   }, [products]);
 
   const activeProduct = previewProducts[activeProductIndex] || null;
@@ -894,7 +923,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Rest of Home page remains unchanged */}
         <section className="mb-3 si-animate-section">
           <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
             <div className="row g-3 align-items-center">
