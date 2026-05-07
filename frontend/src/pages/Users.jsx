@@ -14,11 +14,16 @@ const ALL_ROLES = [
 ];
 
 const ROLE_LABELS = {
-  SUPER_ADMIN: "Super Admin",
+  SUPER_ADMIN: "System Administrator",
   BRANCH_MANAGER: "Branch Manager",
   INVENTORY_OFFICER: "Inventory Officer",
   BRANCH_STAFF: "Branch Staff",
   DELIVERY_RIDER: "Delivery Rider",
+};
+
+const displayFullName = (user) => {
+  if (user?.role === "SUPER_ADMIN") return "Mily";
+  return user?.fullName || "-";
 };
 
 const roleBadgeStyle = (role) => {
@@ -287,7 +292,7 @@ export default function Users() {
     if (!cEmail.trim()) return setError("Email is required");
     if (!cPassword) return setError("Password is required");
     if (cPassword !== cPassword2) return setError("Passwords do not match");
-    if (cRole === "SUPER_ADMIN") return setError("SUPER_ADMIN cannot be created from UI");
+    if (cRole === "SUPER_ADMIN") return setError("System Administrator cannot be created from UI");
     if (!cBranchId) return setError("Branch is required for this role");
 
     setSavingCreate(true);
@@ -337,7 +342,7 @@ export default function Users() {
     setError("");
 
     if (!eFullName.trim()) return setError("Full name is required");
-    if (eRole === "SUPER_ADMIN") return setError("SUPER_ADMIN cannot be assigned here");
+    if (eRole === "SUPER_ADMIN") return setError("System Administrator cannot be assigned here");
     if (!eBranchId) return setError("Branch is required for this role");
 
     setSavingEdit(true);
@@ -633,12 +638,12 @@ export default function Users() {
                   <tbody>
                     {filteredUsers.map((u) => {
                       const b = u.branchId ? branchById.get(u.branchId) : null;
-                      const isSuperAdminRow = u.role === "SUPER_ADMIN";
+                      const isSystemAdministratorRow = u.role === "SUPER_ADMIN";
 
                       return (
                         <tr key={u.id}>
                           <td style={{ fontWeight: 800 }}>{u.code || "-"}</td>
-                          <td style={{ fontWeight: 800 }}>{u.fullName || "-"}</td>
+                          <td style={{ fontWeight: 800 }}>{displayFullName(u)}</td>
                           <td>{u.email || "-"}</td>
                           <td>
                             <span style={roleBadgeStyle(u.role)}>
@@ -649,7 +654,7 @@ export default function Users() {
                           <td>{formatDateShort(u.createdAt)}</td>
 
                           <td className="text-center" style={stickyActionCellStyle}>
-                            {isSuperAdminRow ? (
+                            {isSystemAdministratorRow ? (
                               <span style={roleBadgeStyle("SUPER_ADMIN")}>
                                 <i className="bi bi-shield-lock"></i>
                                 Protected
@@ -702,7 +707,7 @@ export default function Users() {
             )}
 
             <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              Actions remain visible on the right side of the table. Super Admin is protected and cannot be edited, reset, or deleted.
+              Actions remain visible on the right side of the table. System Administrator is protected and cannot be edited, reset, or deleted.
             </div>
           </div>
         </div>
@@ -751,7 +756,7 @@ export default function Users() {
                     ))}
                   </select>
                   <div className="text-muted mt-1" style={{ fontSize: 12 }}>
-                    Super Admin cannot be created here.
+                    System Administrator cannot be created here.
                   </div>
                 </div>
 

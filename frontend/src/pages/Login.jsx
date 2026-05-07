@@ -5,6 +5,11 @@ import client from "../api/client";
 
 const BRANCH_RESTRICTED_ROLES = ["BRANCH_MANAGER", "BRANCH_STAFF"];
 
+const displayFullName = (role, fullName) => {
+  if (role === "SUPER_ADMIN") return "Mily";
+  return fullName || "";
+};
+
 export default function Login() {
   const navigate = useNavigate();
 
@@ -57,7 +62,8 @@ export default function Login() {
       const user = data.user || data;
 
       const role = user?.role || tokenPayload?.role || "";
-      const fullName = user?.fullName || tokenPayload?.fullName || "";
+      const rawFullName = user?.fullName || tokenPayload?.fullName || "";
+      const fullName = displayFullName(role, rawFullName);
       const branchId = user?.branchId || tokenPayload?.branchId || "";
       const branchName = user?.branch?.name || tokenPayload?.branchName || "";
 

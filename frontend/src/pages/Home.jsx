@@ -37,14 +37,6 @@ export default function Home() {
     },
   ];
 
-  const roles = [
-    "System Administrator",
-    "Inventory Officer",
-    "Branch Manager",
-    "Branch Staff",
-    "Delivery Rider",
-  ];
-
   const statCards = [
     { value: "5", label: "User Roles", icon: "bi-people" },
     { value: "Real-Time", label: "Stock Updates", icon: "bi-lightning-charge" },
@@ -140,17 +132,31 @@ export default function Home() {
     },
   ];
 
+  const footerModules = ["Products", "Inventory", "Transfers", "Orders", "Deliveries", "Reports"];
+
+  const footerAccess = [
+    "System Administrator",
+    "Inventory Officer",
+    "Branch Manager",
+    "Branch Staff",
+    "Delivery Rider",
+  ];
+
   const pageStyle = {
     minHeight: "100vh",
     background:
       "linear-gradient(135deg, rgba(239,246,255,1), rgba(255,255,255,1), rgba(245,243,255,.78))",
     color: "#0F172A",
+    position: "relative",
+    overflow: "hidden",
   };
 
   const shellStyle = {
     maxWidth: 1140,
     margin: "0 auto",
     padding: "16px 16px 24px",
+    position: "relative",
+    zIndex: 2,
   };
 
   const navStyle = {
@@ -169,6 +175,7 @@ export default function Home() {
       "radial-gradient(circle at top left, rgba(191,219,254,.82), transparent 34%), radial-gradient(circle at bottom right, rgba(221,214,254,.78), transparent 36%), rgba(255,255,255,.94)",
     boxShadow: "0 16px 36px rgba(15,23,42,.08)",
     overflow: "hidden",
+    position: "relative",
   };
 
   const cardStyle = {
@@ -214,12 +221,205 @@ export default function Home() {
     margin: 0,
   };
 
+  const footerStyle = {
+    borderRadius: 24,
+    border: "1px solid rgba(148,163,184,.35)",
+    background:
+      "linear-gradient(135deg, rgba(15,23,42,.96), rgba(30,41,59,.96), rgba(49,46,129,.92))",
+    color: "#FFFFFF",
+    boxShadow: "0 18px 42px rgba(15,23,42,.16)",
+    overflow: "hidden",
+    position: "relative",
+  };
+
+  const footerLinkStyle = {
+    border: "none",
+    background: "transparent",
+    color: "rgba(255,255,255,.78)",
+    padding: "4px 0",
+    fontSize: 13,
+    fontWeight: 650,
+    textAlign: "left",
+    display: "block",
+    cursor: "pointer",
+  };
+
   return (
     <div style={pageStyle}>
+      <style>
+        {`
+          @keyframes siFloatSoft {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+          }
+
+          @keyframes siBlobMoveOne {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(24px, 28px, 0) scale(1.06); }
+          }
+
+          @keyframes siBlobMoveTwo {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(-24px, 18px, 0) scale(1.08); }
+          }
+
+          @keyframes siFadeUp {
+            from {
+              opacity: 0;
+              transform: translateY(24px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .si-home-blob {
+            position: absolute;
+            border-radius: 999px;
+            pointer-events: none;
+            filter: blur(1px);
+            opacity: 0.38;
+            z-index: 1;
+          }
+
+          .si-home-blob-one {
+            width: 260px;
+            height: 260px;
+            top: 110px;
+            left: -90px;
+            background: rgba(191, 219, 254, 0.74);
+            animation: siBlobMoveOne 9s ease-in-out infinite;
+          }
+
+          .si-home-blob-two {
+            width: 300px;
+            height: 300px;
+            top: 560px;
+            right: -120px;
+            background: rgba(221, 214, 254, 0.72);
+            animation: siBlobMoveTwo 10s ease-in-out infinite;
+          }
+
+          .si-home-blob-three {
+            width: 210px;
+            height: 210px;
+            bottom: 180px;
+            left: 8%;
+            background: rgba(187, 247, 208, 0.42);
+            animation: siBlobMoveOne 12s ease-in-out infinite;
+          }
+
+          .si-animate-section {
+            animation: siFadeUp 0.75s ease both;
+            animation-timeline: view();
+            animation-range: entry 0% cover 22%;
+          }
+
+          .si-hover-card {
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+          }
+
+          .si-hover-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.10) !important;
+            border-color: rgba(96, 165, 250, 0.55) !important;
+          }
+
+          .si-floating-card {
+            animation: siFloatSoft 4.8s ease-in-out infinite;
+          }
+
+          .si-floating-card-delay-1 {
+            animation-delay: 0.4s;
+          }
+
+          .si-floating-card-delay-2 {
+            animation-delay: 0.8s;
+          }
+
+          .si-floating-card-delay-3 {
+            animation-delay: 1.2s;
+          }
+
+          .si-sticky-overview {
+            position: sticky;
+            top: 18px;
+            animation: siFloatSoft 6s ease-in-out infinite;
+          }
+
+          .si-home-nav {
+            position: sticky;
+            top: 12px;
+            z-index: 20;
+          }
+
+          .si-hero-glow {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: 18%;
+            top: 28px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.45);
+            filter: blur(16px);
+            pointer-events: none;
+          }
+
+          .si-footer-link:hover {
+            color: #FFFFFF !important;
+            transform: translateX(3px);
+          }
+
+          .si-footer-link {
+            transition: color 0.2s ease, transform 0.2s ease;
+          }
+
+          .si-footer-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: rgba(255,255,255,.08);
+            color: rgba(255,255,255,.82);
+            font-size: 12px;
+            font-weight: 750;
+          }
+
+          @media (max-width: 991px) {
+            .si-sticky-overview {
+              position: relative;
+              top: auto;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .si-home-blob,
+            .si-floating-card,
+            .si-sticky-overview,
+            .si-animate-section {
+              animation: none !important;
+            }
+
+            .si-hover-card,
+            .si-hover-card:hover {
+              transition: none !important;
+              transform: none !important;
+            }
+          }
+        `}
+      </style>
+
+      <div className="si-home-blob si-home-blob-one"></div>
+      <div className="si-home-blob si-home-blob-two"></div>
+      <div className="si-home-blob si-home-blob-three"></div>
+
       <div style={shellStyle}>
         {/* Top Navigation */}
         <div
-          className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"
+          className="si-home-nav d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"
           style={navStyle}
         >
           <div>
@@ -262,12 +462,14 @@ export default function Home() {
         </div>
 
         {/* Hero Section */}
-        <section className="mb-3" style={heroStyle}>
+        <section className="mb-3 si-animate-section" style={heroStyle}>
+          <div className="si-hero-glow"></div>
+
           <div className="row g-0 align-items-center">
             <div className="col-12 col-lg-7">
               <div className="p-4 p-lg-5">
                 <div
-                  className="d-inline-flex align-items-center gap-2 mb-3"
+                  className="d-inline-flex align-items-center gap-2 mb-3 si-floating-card"
                   style={{
                     padding: "6px 11px",
                     borderRadius: 999,
@@ -322,9 +524,10 @@ export default function Home() {
                 </div>
 
                 <div className="row g-2">
-                  {statCards.map((s) => (
+                  {statCards.map((s, index) => (
                     <div className="col-6 col-md-3" key={s.label}>
                       <div
+                        className={`si-hover-card si-floating-card si-floating-card-delay-${index % 4}`}
                         style={{
                           borderRadius: 14,
                           border: "1px solid rgba(148,163,184,.25)",
@@ -353,6 +556,7 @@ export default function Home() {
             <div className="col-12 col-lg-5">
               <div className="p-3 p-lg-4">
                 <div
+                  className="si-sticky-overview"
                   style={{
                     borderRadius: 22,
                     border: "1px solid rgba(148,163,184,.28)",
@@ -394,7 +598,7 @@ export default function Home() {
                   ].map(([title, text, icon], index) => (
                     <div
                       key={title}
-                      className="d-flex align-items-start gap-3 mb-2"
+                      className="d-flex align-items-start gap-3 mb-2 si-hover-card"
                       style={{
                         padding: "10px",
                         borderRadius: 14,
@@ -448,8 +652,8 @@ export default function Home() {
         </section>
 
         {/* About System */}
-        <section className="mb-3">
-          <div className="p-3 p-md-4" style={cardStyle}>
+        <section className="mb-3 si-animate-section">
+          <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
             <div className="row g-3 align-items-center">
               <div className="col-12 col-lg-5">
                 <div style={sectionBadgeStyle} className="mb-2">
@@ -486,7 +690,7 @@ export default function Home() {
                   {aboutHighlights.map((item) => (
                     <div className="col-12 col-md-6" key={item.title}>
                       <div
-                        className="h-100"
+                        className="h-100 si-hover-card"
                         style={{
                           borderRadius: 15,
                           border: "1px solid rgba(226,232,240,.95)",
@@ -538,11 +742,11 @@ export default function Home() {
         </section>
 
         {/* Why Needed */}
-        <section className="mb-3">
+        <section className="mb-3 si-animate-section">
           <div className="row g-3">
             <div className="col-12 col-lg-4">
               <div
-                className="p-3 p-md-4 h-100"
+                className="p-3 p-md-4 h-100 si-hover-card"
                 style={{
                   ...cardStyle,
                   background:
@@ -569,7 +773,7 @@ export default function Home() {
                 {problems.map((item) => (
                   <div className="col-12 col-md-6" key={item.title}>
                     <div
-                      className="h-100"
+                      className="h-100 si-hover-card"
                       style={{
                         borderRadius: 16,
                         border: "1px solid rgba(254,202,202,.80)",
@@ -614,7 +818,7 @@ export default function Home() {
         </section>
 
         {/* Benefits */}
-        <section className="mb-3">
+        <section className="mb-3 si-animate-section">
           <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
             <div>
               <div style={sectionBadgeStyle} className="mb-2">
@@ -633,7 +837,7 @@ export default function Home() {
           <div className="row g-3">
             {benefits.map((item) => (
               <div className="col-12 col-md-6 col-xl-4" key={item.title}>
-                <div className="p-3" style={{ ...cardStyle, minHeight: 118 }}>
+                <div className="p-3 si-hover-card" style={{ ...cardStyle, minHeight: 118 }}>
                   <div className="d-flex align-items-start gap-3">
                     <div style={iconBoxStyle}>
                       <i className={`bi ${item.icon}`}></i>
@@ -656,7 +860,7 @@ export default function Home() {
         </section>
 
         {/* Key Modules */}
-        <section className="mb-3">
+        <section className="mb-3 si-animate-section">
           <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
             <div>
               <div style={sectionBadgeStyle} className="mb-2">
@@ -671,7 +875,7 @@ export default function Home() {
           <div className="row g-3">
             {features.map((f) => (
               <div className="col-12 col-md-6 col-xl-4" key={f.title}>
-                <div className="p-3" style={{ ...cardStyle, minHeight: 120 }}>
+                <div className="p-3 si-hover-card" style={{ ...cardStyle, minHeight: 120 }}>
                   <div className="d-flex align-items-start gap-3">
                     <div style={iconBoxStyle}>
                       <i className={`bi ${f.icon}`}></i>
@@ -694,8 +898,8 @@ export default function Home() {
         </section>
 
         {/* Workflow */}
-        <section className="mb-3">
-          <div className="p-3 p-md-4" style={cardStyle}>
+        <section className="mb-3 si-animate-section">
+          <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
               <div>
                 <div style={sectionBadgeStyle} className="mb-2">
@@ -715,7 +919,7 @@ export default function Home() {
               {workflow.map((item, index) => (
                 <div className="col-12 col-md-6 col-xl-4" key={item}>
                   <div
-                    className="h-100 d-flex align-items-center gap-3"
+                    className="h-100 d-flex align-items-center gap-3 si-hover-card"
                     style={{
                       padding: "11px 12px",
                       borderRadius: 15,
@@ -751,77 +955,229 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Role-Based Access */}
-        <section className="mb-3">
-          <div className="p-3 p-md-4" style={cardStyle}>
-            <div className="row g-3 align-items-center">
-              <div className="col-12 col-lg-5">
-                <div style={sectionBadgeStyle} className="mb-2">
-                  <i className="bi bi-person-lock"></i>
-                  Role-Based Access Control
+        {/* Professional Footer */}
+        <footer className="si-animate-section" style={footerStyle}>
+          <div
+            style={{
+              position: "absolute",
+              width: 220,
+              height: 220,
+              right: -80,
+              top: -90,
+              borderRadius: "50%",
+              background: "rgba(147,197,253,.16)",
+              pointerEvents: "none",
+            }}
+          ></div>
+
+          <div
+            style={{
+              position: "absolute",
+              width: 180,
+              height: 180,
+              left: -70,
+              bottom: -80,
+              borderRadius: "50%",
+              background: "rgba(221,214,254,.14)",
+              pointerEvents: "none",
+            }}
+          ></div>
+
+          <div className="p-4 p-lg-5" style={{ position: "relative", zIndex: 2 }}>
+            <div className="row g-4">
+              <div className="col-12 col-lg-4">
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 950,
+                    letterSpacing: 0.4,
+                    color: "#FFFFFF",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  SMART INVENTORY
                 </div>
 
-                <h2 style={sectionTitleStyle}>
-                  Access is controlled by assigned responsibility
-                </h2>
+                <div
+                  style={{
+                    color: "rgba(255,255,255,.72)",
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                    marginTop: 10,
+                    maxWidth: 360,
+                  }}
+                >
+                  A role-based multi-branch inventory and distribution management system
+                  designed to organize products, stock, transfers, orders, deliveries,
+                  reports, and notifications from one secure platform.
+                </div>
 
-                <p className="text-muted mt-2 mb-0" style={{ fontSize: 13, lineHeight: 1.7 }}>
-                  The system is designed for authorized staff only. Each user can access
-                  specific pages, data, and actions based on their assigned role.
-                </p>
+                <div className="d-flex flex-wrap gap-2 mt-3">
+                  <span className="si-footer-pill">
+                    <i className="bi bi-shield-lock"></i>
+                    Secure Access
+                  </span>
+                  <span className="si-footer-pill">
+                    <i className="bi bi-building"></i>
+                    Multi-Branch
+                  </span>
+                  <span className="si-footer-pill">
+                    <i className="bi bi-activity"></i>
+                    Real-Time Flow
+                  </span>
+                </div>
               </div>
 
-              <div className="col-12 col-lg-7">
-                <div className="row g-2">
-                  {roles.map((roleName) => (
-                    <div className="col-12 col-md-6 col-xl" key={roleName}>
-                      <div
-                        className="h-100 text-center"
-                        style={{
-                          padding: "12px 10px",
-                          borderRadius: 15,
-                          background:
-                            "linear-gradient(135deg, rgba(248,250,252,.95), rgba(255,255,255,.98))",
-                          border: "1px solid rgba(226,232,240,.95)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 12,
-                            background: "#EEF2FF",
-                            color: "#4F46E5",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            marginBottom: 8,
-                          }}
-                        >
-                          <i className="bi bi-person-badge"></i>
-                        </div>
+              <div className="col-6 col-lg-2">
+                <div
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    paddingBottom: 10,
+                    borderBottom: "1px solid rgba(255,255,255,.20)",
+                    marginBottom: 10,
+                  }}
+                >
+                  Quick Links
+                </div>
 
-                        <div style={{ fontSize: 12, fontWeight: 900, color: "#334155" }}>
-                          {roleName}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <button
+                  className="si-footer-link"
+                  style={footerLinkStyle}
+                  onClick={() => navigate("/")}
+                >
+                  Home
+                </button>
+                <button
+                  className="si-footer-link"
+                  style={footerLinkStyle}
+                  onClick={() => navigate("/catalog")}
+                >
+                  Product Catalog
+                </button>
+                <button
+                  className="si-footer-link"
+                  style={footerLinkStyle}
+                  onClick={() => navigate("/login")}
+                >
+                  Staff Login
+                </button>
+              </div>
+
+              <div className="col-6 col-lg-2">
+                <div
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    paddingBottom: 10,
+                    borderBottom: "1px solid rgba(255,255,255,.20)",
+                    marginBottom: 10,
+                  }}
+                >
+                  System Modules
+                </div>
+
+                {footerModules.map((moduleName) => (
+                  <div
+                    key={moduleName}
+                    style={{
+                      color: "rgba(255,255,255,.78)",
+                      padding: "4px 0",
+                      fontSize: 13,
+                      fontWeight: 650,
+                    }}
+                  >
+                    {moduleName}
+                  </div>
+                ))}
+              </div>
+
+              <div className="col-12 col-lg-2">
+                <div
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    paddingBottom: 10,
+                    borderBottom: "1px solid rgba(255,255,255,.20)",
+                    marginBottom: 10,
+                  }}
+                >
+                  Access Roles
+                </div>
+
+                {footerAccess.map((roleName) => (
+                  <div
+                    key={roleName}
+                    style={{
+                      color: "rgba(255,255,255,.78)",
+                      padding: "4px 0",
+                      fontSize: 13,
+                      fontWeight: 650,
+                    }}
+                  >
+                    {roleName}
+                  </div>
+                ))}
+              </div>
+
+              <div className="col-12 col-lg-2">
+                <div
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    paddingBottom: 10,
+                    borderBottom: "1px solid rgba(255,255,255,.20)",
+                    marginBottom: 10,
+                  }}
+                >
+                  Project Info
+                </div>
+
+                <div style={{ color: "rgba(255,255,255,.78)", fontSize: 13, lineHeight: 1.8 }}>
+                  <div>
+                    <strong style={{ color: "#FFFFFF" }}>Developer:</strong>
+                    <br />
+                    Sumaiya Islam Mily
+                  </div>
+
+                  <div className="mt-2">
+                    <strong style={{ color: "#FFFFFF" }}>Department:</strong>
+                    <br />
+                    BCSE, IUBAT
+                  </div>
+
+                  <div className="mt-2">
+                    <strong style={{ color: "#FFFFFF" }}>Type:</strong>
+                    <br />
+                    Practicum Project
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Footer */}
-        <footer
-          className="text-center text-muted"
-          style={{
-            marginTop: 20,
-            fontSize: 12,
-          }}
-        >
-          Smart Inventory System · Practicum Project · By Sumaiya Islam Mily, BCSE, IUBAT
+            <div
+              className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3"
+              style={{
+                borderTop: "1px solid rgba(255,255,255,.16)",
+                color: "rgba(255,255,255,.68)",
+                fontSize: 12,
+              }}
+            >
+              <div>
+                © {new Date().getFullYear()} Smart Inventory System. All rights reserved.
+              </div>
+
+              <div className="d-flex flex-wrap gap-3">
+                <span>Role-Based Access</span>
+                <span>Inventory Control</span>
+                <span>Reports & Invoice</span>
+              </div>
+            </div>
+          </div>
         </footer>
       </div>
     </div>

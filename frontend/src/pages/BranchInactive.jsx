@@ -1,6 +1,18 @@
 // frontend/src/pages/BranchInactive.jsx
 import { useNavigate } from "react-router-dom";
 
+const roleLabel = (role) => {
+  const labels = {
+    SUPER_ADMIN: "System Administrator",
+    INVENTORY_OFFICER: "Inventory Officer",
+    BRANCH_MANAGER: "Branch Manager",
+    BRANCH_STAFF: "Branch Staff",
+    DELIVERY_RIDER: "Delivery Rider",
+  };
+
+  return labels[role] || role || "—";
+};
+
 export default function BranchInactive() {
   const navigate = useNavigate();
 
@@ -91,7 +103,7 @@ export default function BranchInactive() {
             <div style={{ fontWeight: 800, color: "#0F172A" }}>{branchName}</div>
 
             <div className="small text-muted mt-2">User Role</div>
-            <div style={{ fontWeight: 800, color: "#0F172A" }}>{role || "—"}</div>
+            <div style={{ fontWeight: 800, color: "#0F172A" }}>{roleLabel(role)}</div>
           </div>
 
           <button

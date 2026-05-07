@@ -23,6 +23,11 @@ const fmtDate = (value) => {
   return d.toLocaleString();
 };
 
+const displayUserName = (user) => {
+  if (user?.role === "SUPER_ADMIN") return "Mily";
+  return user?.fullName || "-";
+};
+
 const statusBadgeStyle = (status) => {
   const s = String(status || "").toUpperCase();
 
@@ -328,7 +333,7 @@ export default function Reports() {
         Type: x.type || "-",
         Quantity: Number(x.quantity || 0),
         Reason: x.reason || "-",
-        "Created By": x.user?.fullName || "-",
+        "Created By": displayUserName(x.user),
       }));
     }
 
@@ -354,8 +359,8 @@ export default function Reports() {
       Items:
         x.items?.map((it) => `${it.product?.name || "Product"} x ${it.quantity}`).join(", ") ||
         "-",
-      RequestedBy: x.requester?.fullName || "-",
-      ApprovedBy: x.approver?.fullName || "-",
+      RequestedBy: displayUserName(x.requester),
+      ApprovedBy: displayUserName(x.approver),
       Created: fmtDate(x.createdAt),
     }));
   }, [data, tab]);
