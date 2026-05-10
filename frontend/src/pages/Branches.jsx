@@ -42,6 +42,7 @@ export default function Branches() {
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
@@ -49,6 +50,7 @@ export default function Branches() {
   const [editId, setEditId] = useState("");
   const [eName, setEName] = useState("");
   const [eAddress, setEAddress] = useState("");
+  const [ePhone, setEPhone] = useState("");
   const [eLat, setELat] = useState("");
   const [eLng, setELng] = useState("");
   const [eActive, setEActive] = useState(true);
@@ -131,12 +133,14 @@ export default function Branches() {
       await client.post("/branches", {
         name: name.trim(),
         address: address.trim(),
+        phone: phone.trim() || null,
         latitude: lat,
         longitude: lng,
       });
 
       setName("");
       setAddress("");
+      setPhone("");
       setLatitude("");
       setLongitude("");
       await fetchBranches();
@@ -150,6 +154,7 @@ export default function Branches() {
     setEditId(b.id);
     setEName(b.name || "");
     setEAddress(b.address || "");
+    setEPhone(b.phone || "");
     setELat(b.latitude ?? "");
     setELng(b.longitude ?? "");
     setEActive(b.isActive !== false);
@@ -180,6 +185,7 @@ export default function Branches() {
       await client.put(`/branches/${editId}`, {
         name: eName.trim(),
         address: eAddress.trim(),
+        phone: ePhone.trim() || null,
         latitude: lat,
         longitude: lng,
         isActive: !!eActive,
@@ -246,7 +252,8 @@ export default function Branches() {
               Branches
             </h2>
             <div className="text-muted" style={{ marginTop: 4 }}>
-              Manage branch locations, operational status, and geographic details.
+              Manage branch locations, contact numbers, operational status, and geographic
+              details.
             </div>
           </div>
 
@@ -304,7 +311,7 @@ export default function Branches() {
                   Create Branch
                 </div>
                 <div className="text-muted" style={{ fontSize: 13 }}>
-                  Add a new branch with address and map coordinates.
+                  Add a new branch with address, phone number, and map coordinates.
                 </div>
               </div>
 
@@ -325,7 +332,7 @@ export default function Branches() {
 
           <div className="card-body">
             <form onSubmit={createBranch} className="row g-2 align-items-end">
-              <div className="col-12 col-xl-3">
+              <div className="col-12 col-xl-2">
                 <label className="form-label small text-muted mb-1" htmlFor="branchName">
                   Name
                 </label>
@@ -356,6 +363,22 @@ export default function Branches() {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   required
+                />
+              </div>
+
+              <div className="col-12 col-xl-2">
+                <label className="form-label small text-muted mb-1" htmlFor="branchPhone">
+                  Phone
+                </label>
+
+                <input
+                  id="branchPhone"
+                  name="branchPhone"
+                  className="form-control"
+                  style={inputStyle}
+                  placeholder="017XXXXXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
 
@@ -393,7 +416,7 @@ export default function Branches() {
                 />
               </div>
 
-              <div className="col-12 col-xl-2 d-grid">
+              <div className="col-12 col-xl-1 d-grid">
                 <button
                   className="btn btn-primary"
                   style={{
@@ -403,8 +426,7 @@ export default function Branches() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <i className="bi bi-plus-circle me-1"></i>
-                  Create
+                  <i className="bi bi-plus-circle"></i>
                 </button>
               </div>
             </form>
@@ -432,11 +454,12 @@ export default function Branches() {
                 <table className="table table-bordered table-hover align-middle mb-0">
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 100 }}>Code</th>
-                      <th style={{ minWidth: 160 }}>Name</th>
-                      <th style={{ minWidth: 200 }}>Address</th>
-                      <th style={{ width: 125 }}>Latitude</th>
-                      <th style={{ width: 125 }}>Longitude</th>
+                      <th style={{ width: 95 }}>Code</th>
+                      <th style={{ minWidth: 150 }}>Name</th>
+                      <th style={{ minWidth: 210 }}>Address</th>
+                      <th style={{ minWidth: 140 }}>Phone</th>
+                      <th style={{ width: 115 }}>Latitude</th>
+                      <th style={{ width: 115 }}>Longitude</th>
                       <th style={{ width: 130 }}>Status</th>
                       <th style={{ width: 235, textAlign: "center" }}>Actions</th>
                     </tr>
@@ -461,6 +484,7 @@ export default function Branches() {
                           <td style={{ fontWeight: 800 }}>{b.code || "-"}</td>
                           <td style={{ fontWeight: 800 }}>{b.name || "-"}</td>
                           <td>{b.address || "-"}</td>
+                          <td>{b.phone || "-"}</td>
                           <td>{b.latitude ?? "-"}</td>
                           <td>{b.longitude ?? "-"}</td>
 
@@ -495,9 +519,7 @@ export default function Branches() {
                                 onClick={() => toggleActive(b)}
                                 disabled={busyId === b.id}
                                 title={
-                                  active
-                                    ? "Deactivate this branch"
-                                    : "Activate this branch"
+                                  active ? "Deactivate this branch" : "Activate this branch"
                                 }
                               >
                                 {busyId === b.id ? (
@@ -522,7 +544,7 @@ export default function Branches() {
 
                     {branches.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center text-muted py-4">
+                        <td colSpan="8" className="text-center text-muted py-4">
                           No branches found
                         </td>
                       </tr>
@@ -567,7 +589,7 @@ export default function Branches() {
                       </h5>
 
                       <div className="text-muted" style={{ fontSize: 13 }}>
-                        Update branch details and operational status.
+                        Update branch details, contact number, and operational status.
                       </div>
                     </div>
 
@@ -611,6 +633,25 @@ export default function Branches() {
                           value={eAddress}
                           onChange={(e) => setEAddress(e.target.value)}
                           required
+                        />
+                      </div>
+
+                      <div className="col-12">
+                        <label
+                          className="form-label small text-muted mb-1"
+                          htmlFor="editBranchPhone"
+                        >
+                          Phone
+                        </label>
+
+                        <input
+                          id="editBranchPhone"
+                          name="editBranchPhone"
+                          className="form-control"
+                          style={inputStyle}
+                          value={ePhone}
+                          placeholder="017XXXXXXXX"
+                          onChange={(e) => setEPhone(e.target.value)}
                         />
                       </div>
 

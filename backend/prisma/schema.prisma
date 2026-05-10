@@ -84,10 +84,11 @@ model Branch {
   code              String?            @unique // B001, B002...
   name              String
   address           String
+  phone             String?
   latitude          Float
   longitude         Float
 
-  // ✅ NEW: branch active/inactive
+  // branch active/inactive
   isActive          Boolean            @default(true)
 
   createdAt         DateTime           @default(now()) @map("created_at")
@@ -148,7 +149,7 @@ model Inventory {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   branch  Branch  @relation(fields: [branchId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  product Product  @relation(fields: [productId], references: [id])
 
   @@unique([branchId, productId])
   @@map("inventory")
@@ -167,8 +168,8 @@ model StockTransaction {
   createdAt     DateTime             @default(now()) @map("created_at")
 
   branch  Branch  @relation(fields: [branchId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-  user    User    @relation(fields: [createdBy], references: [id])
+  product Product  @relation(fields: [productId], references: [id])
+  user    User     @relation(fields: [createdBy], references: [id])
 
   @@map("stock_transactions")
 }
@@ -184,7 +185,7 @@ model TransferRequest {
   dispatchDate DateTime?      @map("dispatch_date")
   receiveDate  DateTime?      @map("receive_date")
   createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
   fromBranch Branch         @relation("FromBranch", fields: [fromBranchId], references: [id])
   toBranch   Branch         @relation("ToBranch", fields: [toBranchId], references: [id])

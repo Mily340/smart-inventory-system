@@ -13,6 +13,12 @@ const toBoolean = (value) => {
   return value;
 };
 
+const cleanOptionalString = (value) => {
+  if (typeof value === "undefined" || value === null) return null;
+  const text = String(value).trim();
+  return text || null;
+};
+
 export const getAllBranches = async () => {
   return prisma.branch.findMany({
     orderBy: { createdAt: "desc" },
@@ -28,7 +34,14 @@ export const getAllBranches = async () => {
   });
 };
 
-export const createBranch = async ({ name, address, latitude, longitude, isActive }) => {
+export const createBranch = async ({
+  name,
+  address,
+  phone,
+  latitude,
+  longitude,
+  isActive,
+}) => {
   if (!name || !address) {
     throw new ApiError(400, "Branch name and address are required");
   }
@@ -52,8 +65,9 @@ export const createBranch = async ({ name, address, latitude, longitude, isActiv
   return prisma.branch.create({
     data: {
       code,
-      name,
-      address,
+      name: String(name).trim(),
+      address: String(address).trim(),
+      phone: cleanOptionalString(phone),
       latitude: lat,
       longitude: lng,
       isActive: typeof isActive === "undefined" ? true : Boolean(toBoolean(isActive)),
@@ -65,13 +79,33 @@ export const updateBranch = async (id, payload) => {
   const existing = await prisma.branch.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Branch not found");
 
-  const { id: _ignoreId, code: _ignoreCode, createdAt: _ignoreCreatedAt, updatedAt: _ignoreUpdatedAt, ...safePayload } =
-    payload || {};
+  const {
+    id: _ignoreId,
+    code: _ignoreCode,
+    createdAt: _ignoreCreatedAt,
+    updatedAt: _ignoreUpdatedAt,
+    ...safePayload
+  } = payload || {};
 
   const data = {};
 
-  if (typeof safePayload.name !== "undefined") data.name = safePayload.name;
-  if (typeof safePayload.address !== "undefined") data.address = safePayload.address;
+  if (typeof safePayload.name !== "undefined") {
+    if (!String(safePayload.name).trim()) {
+      throw new ApiError(400, "Branch name is required");
+    }
+    data.name = String(safePayload.name).trim();
+  }
+
+  if (typeof safePayload.address !== "undefined") {
+    if (!String(safePayload.address).trim()) {
+      throw new ApiError(400, "Branch address is required");
+    }
+    data.address = String(safePayload.address).trim();
+  }
+
+  if (typeof safePayload.phone !== "undefined") {
+    data.phone = cleanOptionalString(safePayload.phone);
+  }
 
   if (typeof safePayload.latitude !== "undefined") {
     const lat = Number(safePayload.latitude);
