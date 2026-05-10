@@ -14,7 +14,7 @@ import { allowRoles } from "../middlewares/role.middleware.js";
 const router = Router();
 
 /**
- * Public: active branch list for registration dropdown
+ * Public: active branch list for registration dropdown and Home page branch section
  * GET /api/v1/branches/public
  */
 router.get("/public", async (_req, res, next) => {
@@ -22,7 +22,14 @@ router.get("/public", async (_req, res, next) => {
     const list = await prisma.branch.findMany({
       where: { isActive: true },
       orderBy: { createdAt: "desc" },
-      select: { id: true, code: true, name: true, isActive: true },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        address: true,
+        phone: true,
+        isActive: true,
+      },
     });
 
     return res.json({ success: true, message: "Branches fetched", data: list });

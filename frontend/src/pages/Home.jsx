@@ -9,7 +9,9 @@ export default function Home() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [productLoading, setProductLoading] = useState(true);
+  const [branchLoading, setBranchLoading] = useState(true);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
 
   const fetchPreviewProducts = async () => {
@@ -25,9 +27,48 @@ export default function Home() {
     }
   };
 
+  const fetchPublicBranches = async () => {
+    setBranchLoading(true);
+
+    try {
+      const res = await client.get("/branches/public");
+      setBranches(res.data?.data || []);
+    } catch {
+      setBranches([]);
+    } finally {
+      setBranchLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchPreviewProducts();
+    fetchPublicBranches();
   }, []);
+
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
+  const getBranchAddress = (branch) =>
+    branch?.address ||
+    branch?.branchAddress ||
+    branch?.location ||
+    branch?.branchLocation ||
+    "Address not available";
+
+  const getBranchPhone = (branch) =>
+    branch?.phone ||
+    branch?.contactNumber ||
+    branch?.mobile ||
+    branch?.phoneNumber ||
+    "Phone not available";
 
   const previewProducts = useMemo(() => {
     const productList = products || [];
@@ -64,10 +105,12 @@ export default function Home() {
   }, [products]);
 
   const activeProduct = previewProducts[activeProductIndex] || null;
+
   const nextProduct =
     previewProducts.length > 1
       ? previewProducts[(activeProductIndex + 1) % previewProducts.length]
       : null;
+
   const previousProduct =
     previewProducts.length > 1
       ? previewProducts[
@@ -254,6 +297,17 @@ export default function Home() {
     backdropFilter: "blur(10px)",
   };
 
+  const navLinkStyle = {
+    border: "none",
+    background: "transparent",
+    color: "#475569",
+    fontSize: 13,
+    fontWeight: 850,
+    padding: "7px 9px",
+    borderRadius: 999,
+    cursor: "pointer",
+  };
+
   const heroStyle = {
     borderRadius: 24,
     border: "1px solid rgba(148,163,184,.35)",
@@ -334,6 +388,14 @@ export default function Home() {
     <div style={pageStyle}>
       <style>
         {`
+          html {
+            scroll-behavior: smooth;
+          }
+
+          .si-section-target {
+            scroll-margin-top: 92px;
+          }
+
           @keyframes siFloatSoft {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-8px); }
@@ -590,6 +652,19 @@ export default function Home() {
             font-weight: 750;
           }
 
+          .si-top-section-link:hover {
+            color: #4F46E5 !important;
+            background: #EEF2FF !important;
+          }
+
+          @media (max-width: 991px) {
+            .si-section-links {
+              order: 3;
+              width: 100%;
+              justify-content: center;
+            }
+          }
+
           @media (max-width: 575px) {
             .si-product-stage {
               height: 280px;
@@ -643,6 +718,26 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="si-section-links d-flex flex-wrap gap-1">
+            {[
+              ["Overview", "overview"],
+              ["About", "about"],
+              ["Features", "features"],
+              ["Workflow", "workflow"],
+              ["Branches", "branches"],
+            ].map(([label, id]) => (
+              <button
+                key={id}
+                type="button"
+                className="si-top-section-link"
+                style={navLinkStyle}
+                onClick={() => scrollToSection(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="d-flex flex-wrap gap-2">
             <button
               className="btn btn-outline-primary btn-sm"
@@ -664,7 +759,7 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="mb-3 si-animate-section" style={heroStyle}>
+        <section id="overview" className="mb-3 si-animate-section si-section-target" style={heroStyle}>
           <div className="si-hero-glow"></div>
 
           <div className="row g-0 align-items-center">
@@ -755,7 +850,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="col-12 col-lg-5">
+            <div id="catalog-preview" className="col-12 col-lg-5 si-section-target">
               <div className="p-3 p-lg-4">
                 <div
                   style={{
@@ -924,7 +1019,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mb-3 si-animate-section">
+        <section id="about" className="mb-3 si-animate-section si-section-target">
           <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
             <div className="row g-3 align-items-center">
               <div className="col-12 col-lg-5">
@@ -1004,6 +1099,274 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="features" className="mb-3 si-animate-section si-section-target">
+          <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
+            <div>
+              <div style={sectionBadgeStyle} className="mb-2">
+                <i className="bi bi-check2-circle"></i>
+                What the System Helps With
+              </div>
+
+              <h2 style={sectionTitleStyle}>Clear control over daily inventory activities</h2>
+
+              <div className="text-muted" style={{ marginTop: 4, fontSize: 13 }}>
+                The system is organized around the main tasks needed in branch-based inventory
+                and distribution management.
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3 mb-3">
+            {benefits.map((item) => (
+              <div className="col-12 col-md-6 col-xl-4" key={item.title}>
+                <div className="p-3 si-hover-card" style={{ ...cardStyle, minHeight: 118 }}>
+                  <div className="d-flex align-items-start gap-3">
+                    <div style={iconBoxStyle}>
+                      <i className={`bi ${item.icon}`}></i>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 950, marginBottom: 4 }}>
+                        {item.title}
+                      </div>
+
+                      <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.55 }}>
+                        {item.text}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
+            <div>
+              <div style={sectionBadgeStyle} className="mb-2">
+                <i className="bi bi-grid-1x2"></i>
+                Key Modules
+              </div>
+
+              <h2 style={sectionTitleStyle}>Core functions included in the system</h2>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            {features.map((f) => (
+              <div className="col-12 col-md-6 col-xl-4" key={f.title}>
+                <div className="p-3 si-hover-card" style={{ ...cardStyle, minHeight: 120 }}>
+                  <div className="d-flex align-items-start gap-3">
+                    <div style={iconBoxStyle}>
+                      <i className={`bi ${f.icon}`}></i>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 950, marginBottom: 4 }}>
+                        {f.title}
+                      </div>
+
+                      <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.55 }}>
+                        {f.text}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="workflow" className="mb-3 si-animate-section si-section-target">
+          <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
+            <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+              <div>
+                <div style={sectionBadgeStyle} className="mb-2">
+                  <i className="bi bi-kanban"></i>
+                  System Workflow
+                </div>
+
+                <h2 style={sectionTitleStyle}>From login to final report</h2>
+              </div>
+
+              <div className="text-muted" style={{ fontSize: 13 }}>
+                Main operational flow of the system
+              </div>
+            </div>
+
+            <div className="row g-2">
+              {workflow.map((item, index) => (
+                <div className="col-12 col-md-6 col-xl-4" key={item}>
+                  <div
+                    className="h-100 d-flex align-items-center gap-3 si-hover-card"
+                    style={{
+                      padding: "11px 12px",
+                      borderRadius: 15,
+                      background: index % 2 === 0 ? "#F8FAFC" : "#FFFFFF",
+                      border: "1px solid rgba(226,232,240,.90)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: "#EEF2FF",
+                        color: "#4F46E5",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 950,
+                        fontSize: 12,
+                        flex: "0 0 auto",
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#334155" }}>
+                      {item}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="branches" className="mb-3 si-animate-section si-section-target">
+          <div
+            className="p-3 p-md-4 si-hover-card"
+            style={{
+              ...cardStyle,
+              background:
+                "linear-gradient(135deg, rgba(239,246,255,.95), rgba(255,255,255,.96), rgba(245,243,255,.72))",
+            }}
+          >
+            <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+              <div>
+                <div style={sectionBadgeStyle} className="mb-2">
+                  <i className="bi bi-geo-alt"></i>
+                  Branch Locations
+                </div>
+
+                <h2 style={sectionTitleStyle}>Contact the nearest active branch</h2>
+
+                <div className="text-muted" style={{ marginTop: 4, fontSize: 13 }}>
+                  Find branch address and contact number for product availability, stock
+                  queries, or order support.
+                </div>
+              </div>
+
+              <span
+                style={{
+                  borderRadius: 999,
+                  border: "1px solid rgba(148,163,184,.35)",
+                  background: "rgba(255,255,255,.82)",
+                  padding: "7px 11px",
+                  fontSize: 12,
+                  fontWeight: 850,
+                  color: "#475569",
+                }}
+              >
+                {branchLoading ? "Loading branches..." : `${branches.length} active branch(es)`}
+              </span>
+            </div>
+
+            {branchLoading ? (
+              <div
+                className="text-center text-muted py-4"
+                style={{
+                  borderRadius: 16,
+                  border: "1px dashed rgba(148,163,184,.45)",
+                  background: "rgba(255,255,255,.72)",
+                }}
+              >
+                Loading branch information...
+              </div>
+            ) : branches.length > 0 ? (
+              <div className="row g-3">
+                {branches.map((branch) => (
+                  <div className="col-12 col-md-6 col-xl-4" key={branch.id}>
+                    <div
+                      className="h-100 si-hover-card"
+                      style={{
+                        borderRadius: 18,
+                        border: "1px solid rgba(148,163,184,.28)",
+                        background: "rgba(255,255,255,.92)",
+                        boxShadow: "0 10px 22px rgba(15,23,42,.06)",
+                        padding: 16,
+                      }}
+                    >
+                      <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 16,
+                              fontWeight: 950,
+                              color: "#0F172A",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {branch.name || "Branch"}
+                          </div>
+
+                          <div className="text-muted" style={{ fontSize: 12, marginTop: 3 }}>
+                            Code: {branch.code || "-"}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 14,
+                            background: "#EEF2FF",
+                            color: "#4F46E5",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flex: "0 0 auto",
+                            border: "1px solid rgba(165,180,252,.60)",
+                          }}
+                        >
+                          <i className="bi bi-building-check"></i>
+                        </div>
+                      </div>
+
+                      <div
+                        className="d-flex align-items-start gap-2 mb-2"
+                        style={{ fontSize: 13, color: "#475569", lineHeight: 1.55 }}
+                      >
+                        <i className="bi bi-geo-alt-fill" style={{ color: "#2563EB" }}></i>
+                        <span>{getBranchAddress(branch)}</span>
+                      </div>
+
+                      <div
+                        className="d-flex align-items-center gap-2"
+                        style={{ fontSize: 13, color: "#475569", lineHeight: 1.55 }}
+                      >
+                        <i className="bi bi-telephone-fill" style={{ color: "#16A34A" }}></i>
+                        <span>{getBranchPhone(branch)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="text-center text-muted py-4"
+                style={{
+                  borderRadius: 16,
+                  border: "1px dashed rgba(148,163,184,.45)",
+                  background: "rgba(255,255,255,.72)",
+                }}
+              >
+                No active branch information is available right now.
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="mb-3 si-animate-section">
           <div className="row g-3">
             <div className="col-12 col-lg-4">
@@ -1075,141 +1438,6 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-3 si-animate-section">
-          <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
-            <div>
-              <div style={sectionBadgeStyle} className="mb-2">
-                <i className="bi bi-check2-circle"></i>
-                What the System Helps With
-              </div>
-
-              <h2 style={sectionTitleStyle}>Clear control over daily inventory activities</h2>
-              <div className="text-muted" style={{ marginTop: 4, fontSize: 13 }}>
-                The system is organized around the main tasks needed in branch-based inventory
-                and distribution management.
-              </div>
-            </div>
-          </div>
-
-          <div className="row g-3">
-            {benefits.map((item) => (
-              <div className="col-12 col-md-6 col-xl-4" key={item.title}>
-                <div className="p-3 si-hover-card" style={{ ...cardStyle, minHeight: 118 }}>
-                  <div className="d-flex align-items-start gap-3">
-                    <div style={iconBoxStyle}>
-                      <i className={`bi ${item.icon}`}></i>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 950, marginBottom: 4 }}>
-                        {item.title}
-                      </div>
-
-                      <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.55 }}>
-                        {item.text}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mb-3 si-animate-section">
-          <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
-            <div>
-              <div style={sectionBadgeStyle} className="mb-2">
-                <i className="bi bi-grid-1x2"></i>
-                Key Modules
-              </div>
-
-              <h2 style={sectionTitleStyle}>Core functions included in the system</h2>
-            </div>
-          </div>
-
-          <div className="row g-3">
-            {features.map((f) => (
-              <div className="col-12 col-md-6 col-xl-4" key={f.title}>
-                <div className="p-3 si-hover-card" style={{ ...cardStyle, minHeight: 120 }}>
-                  <div className="d-flex align-items-start gap-3">
-                    <div style={iconBoxStyle}>
-                      <i className={`bi ${f.icon}`}></i>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 950, marginBottom: 4 }}>
-                        {f.title}
-                      </div>
-
-                      <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.55 }}>
-                        {f.text}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mb-3 si-animate-section">
-          <div className="p-3 p-md-4 si-hover-card" style={cardStyle}>
-            <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
-              <div>
-                <div style={sectionBadgeStyle} className="mb-2">
-                  <i className="bi bi-kanban"></i>
-                  System Workflow
-                </div>
-
-                <h2 style={sectionTitleStyle}>From login to final report</h2>
-              </div>
-
-              <div className="text-muted" style={{ fontSize: 13 }}>
-                Main operational flow of the system
-              </div>
-            </div>
-
-            <div className="row g-2">
-              {workflow.map((item, index) => (
-                <div className="col-12 col-md-6 col-xl-4" key={item}>
-                  <div
-                    className="h-100 d-flex align-items-center gap-3 si-hover-card"
-                    style={{
-                      padding: "11px 12px",
-                      borderRadius: 15,
-                      background: index % 2 === 0 ? "#F8FAFC" : "#FFFFFF",
-                      border: "1px solid rgba(226,232,240,.90)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: "#EEF2FF",
-                        color: "#4F46E5",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 950,
-                        fontSize: 12,
-                        flex: "0 0 auto",
-                      }}
-                    >
-                      {index + 1}
-                    </div>
-
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "#334155" }}>
-                      {item}
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -1303,10 +1531,19 @@ export default function Home() {
                 <button
                   className="si-footer-link"
                   style={footerLinkStyle}
-                  onClick={() => navigate("/")}
+                  onClick={() => scrollToSection("overview")}
                 >
-                  Home
+                  Overview
                 </button>
+
+                <button
+                  className="si-footer-link"
+                  style={footerLinkStyle}
+                  onClick={() => scrollToSection("branches")}
+                >
+                  Branches
+                </button>
+
                 <button
                   className="si-footer-link"
                   style={footerLinkStyle}
@@ -1314,6 +1551,7 @@ export default function Home() {
                 >
                   Product Catalog
                 </button>
+
                 <button
                   className="si-footer-link"
                   style={footerLinkStyle}
@@ -1430,6 +1668,7 @@ export default function Home() {
               <div className="d-flex flex-wrap gap-3">
                 <span>Role-Based Access</span>
                 <span>Inventory Control</span>
+                <span>Branch Contact</span>
                 <span>Reports & Invoice</span>
               </div>
             </div>
