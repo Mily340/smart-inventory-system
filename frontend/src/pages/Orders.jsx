@@ -76,8 +76,9 @@ export default function Orders() {
 
   const [distributorId, setDistributorId] = useState("");
   const [branchId, setBranchId] = useState("");
-  const [productId, setProductId] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [itemQuantity, setItemQuantity] = useState("");
+  const [orderItems, setOrderItems] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [loadingStock, setLoadingStock] = useState(false);
@@ -109,6 +110,51 @@ export default function Orders() {
 
   const selectedBranchIsActive = selectedBranch ? selectedBranch.isActive !== false : true;
 
+  const selectedStock = useMemo(
+    () => stockItems.find((it) => it.productId === selectedProductId),
+    [stockItems, selectedProductId]
+  );
+
+  const selectedProductAlreadyInOrderQty = useMemo(() => {
+    return orderItems
+      .filter((item) => item.productId === selectedProductId)
+      .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  }, [orderItems, selectedProductId]);
+
+  const selectedAvailableQty = Number(selectedStock?.quantity ?? 0);
+  const selectedRemainingQty = Math.max(
+    selectedAvailableQty - selectedProductAlreadyInOrderQty,
+    0
+  );
+  const selectedUnitPrice = Number(selectedStock?.product?.price ?? 0);
+
+  const qtyNum = useMemo(() => {
+    const n = Number(itemQuantity);
+    return Number.isInteger(n) ? n : NaN;
+  }, [itemQuantity]);
+
+  const itemQtyValid =
+    Number.isInteger(qtyNum) && qtyNum > 0 && qtyNum <= selectedRemainingQty;
+
+  const orderTotal = useMemo(() => {
+    return orderItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+  }, [orderItems]);
+
+  const canAddItem =
+    selectedProductId &&
+    selectedStock &&
+    selectedRemainingQty > 0 &&
+    selectedUnitPrice > 0 &&
+    itemQtyValid &&
+    !loadingStock;
+
+  const canCreate =
+    distributorId &&
+    branchId &&
+    selectedBranchIsActive &&
+    orderItems.length > 0 &&
+    !loadingStock;
+
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
       sessionStorage.removeItem("token");
@@ -124,17 +170,23 @@ export default function Orders() {
     return false;
   };
 
+  const resetOrderItems = () => {
+    setOrderItems([]);
+    setSelectedProductId("");
+    setItemQuantity("");
+  };
+
   const fetchStockForBranch = async (bId) => {
     if (!bId) {
       setStockItems([]);
-      setProductId("");
+      setSelectedProductId("");
       return;
     }
 
     const branch = branches.find((b) => b.id === bId);
     if (branch && branch.isActive === false) {
       setStockItems([]);
-      setProductId("");
+      setSelectedProductId("");
       setError("This branch is inactive. Please activate the branch before creating orders.");
       return;
     }
@@ -148,18 +200,14 @@ export default function Orders() {
       data.sort((a, b) => (a.product?.name || "").localeCompare(b.product?.name || ""));
       setStockItems(data);
 
-      const exists = data.some((it) => it.productId === productId);
-
-      if (!exists) {
-        const first = data[0];
-        setProductId(first ? first.productId : "");
-      }
+      const firstAvailable = data.find((it) => Number(it.quantity || 0) > 0);
+      setSelectedProductId(firstAvailable ? firstAvailable.productId : "");
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load branch stock";
       setError(msg);
       handleUnauthorized(msg);
       setStockItems([]);
-      setProductId("");
+      setSelectedProductId("");
     } finally {
       setLoadingStock(false);
     }
@@ -227,7 +275,7 @@ export default function Orders() {
           await fetchStockForBranch(nextBranchId);
         } else {
           setStockItems([]);
-          setProductId("");
+          setSelectedProductId("");
           setError("No active branches available for creating orders.");
         }
       }
@@ -253,17 +301,10 @@ export default function Orders() {
     if (!branchId) return;
 
     fetchStockForBranch(branchId);
-    setQuantity("");
+    setItemQuantity("");
+    setOrderItems([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
-
-  const selectedStock = useMemo(
-    () => stockItems.find((it) => it.productId === productId),
-    [stockItems, productId]
-  );
-
-  const availableQty = Number(selectedStock?.quantity ?? 0);
-  const unitPrice = Number(selectedStock?.product?.price ?? 0);
 
   const assignedBranchName = useMemo(() => {
     if (!isBranchScoped) return "";
@@ -283,27 +324,67 @@ export default function Orders() {
     return sessionStorage.getItem("branchName") || "Assigned Branch";
   }, [assignedBranchId, isBranchScoped, orders, stockItems]);
 
-  const qtyNum = useMemo(() => {
-    const n = Number(quantity);
-    return Number.isInteger(n) ? n : NaN;
-  }, [quantity]);
+  const addItemToOrder = () => {
+    setError("");
 
-  const qtyValid = Number.isInteger(qtyNum) && qtyNum > 0 && qtyNum <= availableQty;
+    if (!selectedStock || !selectedProductId) {
+      setError("Please select a product.");
+      return;
+    }
 
-  const canCreate =
-    distributorId &&
-    branchId &&
-    productId &&
-    selectedBranchIsActive &&
-    unitPrice > 0 &&
-    availableQty > 0 &&
-    qtyValid &&
-    !loadingStock;
+    if (!itemQtyValid) {
+      setError(`Quantity must be between 1 and ${selectedRemainingQty}.`);
+      return;
+    }
 
-  const previewTotal = useMemo(() => {
-    if (!qtyValid || unitPrice <= 0) return 0;
-    return qtyNum * unitPrice;
-  }, [qtyValid, qtyNum, unitPrice]);
+    const product = selectedStock.product || {};
+    const unitPrice = Number(product.price || 0);
+    const quantity = qtyNum;
+    const subtotal = Number((quantity * unitPrice).toFixed(2));
+
+    const newItem = {
+      productId: selectedProductId,
+      productCode: product.code || "",
+      productName: product.name || "Product",
+      unit: product.unit || "-",
+      quantity,
+      unitPrice,
+      subtotal,
+      availableQty: selectedAvailableQty,
+    };
+
+    setOrderItems((prev) => {
+      const existingIndex = prev.findIndex((item) => item.productId === selectedProductId);
+
+      if (existingIndex === -1) {
+        return [...prev, newItem];
+      }
+
+      return prev.map((item, index) => {
+        if (index !== existingIndex) return item;
+
+        const updatedQuantity = item.quantity + quantity;
+
+        return {
+          ...item,
+          quantity: updatedQuantity,
+          subtotal: Number((updatedQuantity * unitPrice).toFixed(2)),
+          availableQty: selectedAvailableQty,
+        };
+      });
+    });
+
+    setItemQuantity("");
+  };
+
+  const removeItemFromOrder = (productId) => {
+    setOrderItems((prev) => prev.filter((item) => item.productId !== productId));
+  };
+
+  const clearOrderItems = () => {
+    setOrderItems([]);
+    setItemQuantity("");
+  };
 
   const createOrder = async (e) => {
     e.preventDefault();
@@ -311,8 +392,8 @@ export default function Orders() {
 
     const finalBranchId = isBranchScoped ? assignedBranchId : branchId;
 
-    if (!distributorId || !finalBranchId || !productId) {
-      setError("Please select distributor, branch and product.");
+    if (!distributorId || !finalBranchId) {
+      setError("Please select distributor and branch.");
       return;
     }
 
@@ -322,13 +403,8 @@ export default function Orders() {
       return;
     }
 
-    if (availableQty <= 0) {
-      setError("Selected product is out of stock in this branch.");
-      return;
-    }
-
-    if (!qtyValid) {
-      setError(`Quantity must be between 1 and ${availableQty}.`);
+    if (orderItems.length === 0) {
+      setError("Please add at least one product to the order.");
       return;
     }
 
@@ -336,10 +412,13 @@ export default function Orders() {
       await client.post("/orders", {
         distributorId,
         branchId: finalBranchId,
-        items: [{ productId, quantity: qtyNum }],
+        items: orderItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
       });
 
-      setQuantity("");
+      clearOrderItems();
       await fetchAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create order");
@@ -503,6 +582,15 @@ export default function Orders() {
     whiteSpace: "nowrap",
   };
 
+  const compactSelectStyle = {
+    borderRadius: 12,
+    fontSize: 14,
+    minHeight: 42,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+
   return (
     <>
       <style>
@@ -555,7 +643,7 @@ export default function Orders() {
             <div className="text-muted" style={{ marginTop: 4 }}>
               {isBranchScoped
                 ? "Manage orders for your assigned branch only."
-                : "Create orders using active branch stock and track order workflow."}
+                : "Create multi-item distributor orders using active branch stock."}
             </div>
           </div>
 
@@ -591,8 +679,8 @@ export default function Orders() {
                 </div>
                 <div className="text-muted" style={{ fontSize: 13 }}>
                   {isBranchScoped
-                    ? "Branch is locked to your assigned branch."
-                    : "Only active branches are available for new orders."}
+                    ? "Branch is locked to your assigned branch. Add multiple products before creating the order."
+                    : "Only active branches are available. Add multiple products before creating the order."}
                 </div>
               </div>
 
@@ -606,175 +694,336 @@ export default function Orders() {
                   background: "rgba(255,255,255,.85)",
                 }}
               >
-                1 item per order
+                Multi-item order enabled
               </span>
             </div>
           </div>
 
           <div className="card-body">
-            <form onSubmit={createOrder} className="row g-2 align-items-end">
-              <div className="col-12 col-md-3">
-                <label className="form-label small text-muted mb-1">Distributor</label>
-                <select
-                  className="form-select"
-                  style={{ borderRadius: 12 }}
-                  value={distributorId}
-                  onChange={(e) => setDistributorId(e.target.value)}
-                  required
-                >
-                  {distributors.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.code ? `${d.code} - ` : ""}
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-12 col-md-3">
-                <label className="form-label small text-muted mb-1">Branch</label>
-
-                {isBranchScoped ? (
-                  <div
-                    className="form-control"
-                    style={{
-                      borderRadius: 12,
-                      background: "#F8FAFC",
-                      color: "#0F172A",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {assignedBranchName}
-                  </div>
-                ) : (
+            <form onSubmit={createOrder}>
+              <div className="row g-2 align-items-end">
+                <div className="col-12 col-lg-2">
+                  <label className="form-label small text-muted mb-1">Distributor</label>
                   <select
                     className="form-select"
-                    style={{ borderRadius: 12 }}
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
+                    style={compactSelectStyle}
+                    value={distributorId}
+                    onChange={(e) => setDistributorId(e.target.value)}
                     required
-                    disabled={activeBranches.length === 0}
+                    title={
+                      distributors.find((d) => d.id === distributorId)?.name ||
+                      "Select distributor"
+                    }
                   >
-                    {activeBranches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.code ? `${b.code} - ` : ""}
-                        {b.name}
+                    {distributors.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.code ? `${d.code} - ` : ""}
+                        {d.name}
                       </option>
                     ))}
                   </select>
-                )}
-              </div>
+                </div>
 
-              <div className="col-12 col-md-4">
-                <label className="form-label small text-muted mb-1">
-                  Product from branch stock
-                </label>
-                <select
-                  className="form-select"
-                  style={{ borderRadius: 12 }}
-                  value={productId}
-                  onChange={(e) => {
-                    setProductId(e.target.value);
-                    setQuantity("");
-                  }}
-                  required
-                  disabled={loadingStock || !branchId}
-                >
-                  {stockItems.map((it) => (
-                    <option
-                      key={it.productId}
-                      value={it.productId}
-                      disabled={(it.quantity ?? 0) <= 0}
+                <div className="col-12 col-lg-2">
+                  <label className="form-label small text-muted mb-1">Branch</label>
+
+                  {isBranchScoped ? (
+                    <div
+                      className="form-control"
+                      style={{
+                        ...compactSelectStyle,
+                        background: "#F8FAFC",
+                        color: "#0F172A",
+                        fontWeight: 700,
+                      }}
+                      title={assignedBranchName}
                     >
-                      {it.product?.code ? `${it.product.code} - ` : ""}
-                      {it.product?.name}
-                      {typeof it.product?.price === "number" ? ` (৳${it.product.price})` : ""}
-                      {` | Avl: ${it.quantity ?? 0}`}
-                    </option>
-                  ))}
-                </select>
+                      {assignedBranchName}
+                    </div>
+                  ) : (
+                    <select
+                      className="form-select"
+                      style={compactSelectStyle}
+                      value={branchId}
+                      onChange={(e) => {
+                        setBranchId(e.target.value);
+                        resetOrderItems();
+                      }}
+                      required
+                      disabled={activeBranches.length === 0}
+                      title={branches.find((b) => b.id === branchId)?.name || "Select branch"}
+                    >
+                      {activeBranches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.code ? `${b.code} - ` : ""}
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
-                <div className="form-text">
-                  {loadingStock
-                    ? "Loading branch stock..."
-                    : stockItems.length === 0
-                    ? "No products stocked in this active branch yet."
-                    : null}
+                <div className="col-12 col-lg-5">
+                  <label className="form-label small text-muted mb-1">
+                    Product from branch stock
+                  </label>
+                  <select
+                    className="form-select"
+                    style={{
+                      ...compactSelectStyle,
+                      fontSize: 13,
+                    }}
+                    value={selectedProductId}
+                    onChange={(e) => {
+                      setSelectedProductId(e.target.value);
+                      setItemQuantity("");
+                    }}
+                    disabled={loadingStock || !branchId}
+                    title={selectedStock?.product?.name || "Select product"}
+                  >
+                    {stockItems.length === 0 ? (
+                      <option value="">No products available</option>
+                    ) : (
+                      stockItems.map((it) => {
+                        const alreadyAddedQty = orderItems
+                          .filter((item) => item.productId === it.productId)
+                          .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+                        const remaining = Math.max(Number(it.quantity || 0) - alreadyAddedQty, 0);
+
+                        return (
+                          <option
+                            key={it.productId}
+                            value={it.productId}
+                            disabled={remaining <= 0}
+                          >
+                            {it.product?.code ? `${it.product.code} - ` : ""}
+                            {it.product?.name}
+                            {typeof it.product?.price === "number" ? ` (৳${it.product.price})` : ""}
+                            {` | Avl: ${remaining}`}
+                          </option>
+                        );
+                      })
+                    )}
+                  </select>
+
+                  <div className="form-text">
+                    {loadingStock
+                      ? "Loading branch stock..."
+                      : stockItems.length === 0
+                      ? "No products stocked in this active branch yet."
+                      : null}
+                  </div>
+                </div>
+
+                <div className="col-8 col-lg-1">
+                  <label className="form-label small text-muted mb-1">Qty</label>
+                  <input
+                    className={`form-control ${itemQuantity && !itemQtyValid ? "is-invalid" : ""}`}
+                    style={{
+                      borderRadius: 12,
+                      fontSize: 14,
+                      minHeight: 42,
+                    }}
+                    placeholder="Qty"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(e.target.value)}
+                    disabled={!selectedProductId || selectedRemainingQty <= 0 || loadingStock}
+                  />
+
+                  {itemQuantity && !itemQtyValid ? (
+                    <div className="invalid-feedback">Max {selectedRemainingQty}</div>
+                  ) : null}
+                </div>
+
+                <div className="col-4 col-lg-2 d-grid">
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    style={{
+                      borderRadius: 12,
+                      fontWeight: 800,
+                      padding: "10px 12px",
+                      whiteSpace: "nowrap",
+                      minHeight: 42,
+                    }}
+                    disabled={!canAddItem}
+                    onClick={addItemToOrder}
+                  >
+                    Add
+                  </button>
+                </div>
+
+                <div className="col-12">
+                  <div className="d-flex flex-wrap gap-2" style={{ marginTop: 6, fontSize: 13 }}>
+                    <span
+                      style={{
+                        ...hintPillStyle,
+                        background: "rgba(236,254,255,.75)",
+                        borderColor: "rgba(165,243,252,.85)",
+                        color: "#0E7490",
+                      }}
+                    >
+                      Remaining:{" "}
+                      <span style={{ color: "#0F172A" }}>
+                        {selectedProductId ? selectedRemainingQty : "-"}
+                      </span>
+                    </span>
+
+                    <span
+                      style={{
+                        ...hintPillStyle,
+                        background: "rgba(245,243,255,.75)",
+                        borderColor: "rgba(221,214,254,.9)",
+                        color: "#5B21B6",
+                      }}
+                    >
+                      Unit:{" "}
+                      <span style={{ color: "#0F172A" }}>
+                        {selectedUnitPrice ? money(selectedUnitPrice) : "-"}
+                      </span>
+                    </span>
+
+                    <span
+                      style={{
+                        ...hintPillStyle,
+                        background: "rgba(236,253,245,.75)",
+                        borderColor: "rgba(167,243,208,.9)",
+                        color: "#065F46",
+                      }}
+                    >
+                      Order Total:{" "}
+                      <span style={{ color: "#0F172A" }}>{money(orderTotal)}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="col-8 col-md-1">
-                <label className="form-label small text-muted mb-1">Qty</label>
-                <input
-                  className={`form-control ${quantity && !qtyValid ? "is-invalid" : ""}`}
-                  style={{ borderRadius: 12 }}
-                  placeholder="Qty"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  disabled={!productId || availableQty <= 0 || loadingStock}
-                />
-
-                {quantity && !qtyValid ? (
-                  <div className="invalid-feedback">Max {availableQty}</div>
-                ) : null}
-              </div>
-
-              <div className="col-4 col-md-1 d-grid">
-                <button
-                  className="btn btn-primary"
+              <div
+                className="mt-3"
+                style={{
+                  border: "1px solid rgba(148,163,184,.35)",
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  background: "#FFFFFF",
+                }}
+              >
+                <div
+                  className="d-flex flex-wrap justify-content-between align-items-center gap-2"
                   style={{
-                    borderRadius: 12,
-                    fontWeight: 800,
                     padding: "10px 12px",
-                    whiteSpace: "nowrap",
+                    background:
+                      "linear-gradient(180deg, rgba(239,246,255,.65), rgba(255,255,255,1))",
+                    borderBottom: "1px solid rgba(148,163,184,.25)",
                   }}
-                  disabled={!canCreate}
                 >
-                  Create
-                </button>
-              </div>
+                  <div style={{ fontWeight: 900, color: "#0F172A", fontSize: 14 }}>
+                    Selected Order Items
+                  </div>
 
-              <div className="col-12">
-                <div className="d-flex flex-wrap gap-2" style={{ marginTop: 6, fontSize: 13 }}>
-                  <span
-                    style={{
-                      ...hintPillStyle,
-                      background: "rgba(236,254,255,.75)",
-                      borderColor: "rgba(165,243,252,.85)",
-                      color: "#0E7490",
-                    }}
-                  >
-                    Available:{" "}
-                    <span style={{ color: "#0F172A" }}>{productId ? availableQty : "-"}</span>
-                  </span>
-
-                  <span
-                    style={{
-                      ...hintPillStyle,
-                      background: "rgba(245,243,255,.75)",
-                      borderColor: "rgba(221,214,254,.9)",
-                      color: "#5B21B6",
-                    }}
-                  >
-                    Unit:{" "}
-                    <span style={{ color: "#0F172A" }}>
-                      {unitPrice ? `৳${unitPrice}` : "-"}
+                  <div className="d-flex gap-2 align-items-center">
+                    <span
+                      className="text-muted"
+                      style={{
+                        fontSize: 12,
+                        padding: "5px 9px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(148,163,184,.35)",
+                      }}
+                    >
+                      {orderItems.length} item(s)
                     </span>
-                  </span>
 
-                  <span
+                    {orderItems.length > 0 ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        style={{ borderRadius: 10, fontWeight: 800 }}
+                        onClick={clearOrderItems}
+                      >
+                        Clear
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="table table-sm table-bordered align-middle mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th style={{ minWidth: 230 }}>Product</th>
+                        <th style={{ width: 90, textAlign: "center" }}>Qty</th>
+                        <th style={{ width: 120, textAlign: "right" }}>Unit Price</th>
+                        <th style={{ width: 130, textAlign: "right" }}>Subtotal</th>
+                        <th style={{ width: 95, textAlign: "center" }}>Action</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {orderItems.map((item) => (
+                        <tr key={item.productId}>
+                          <td>
+                            <div style={{ fontWeight: 800, color: "#0F172A" }}>
+                              {item.productCode ? `${item.productCode} - ` : ""}
+                              {item.productName}
+                            </div>
+                            <div className="text-muted small">Unit: {item.unit || "-"}</div>
+                          </td>
+                          <td style={{ textAlign: "center", fontWeight: 800 }}>
+                            {item.quantity}
+                          </td>
+                          <td style={{ textAlign: "right" }}>{money(item.unitPrice)}</td>
+                          <td style={{ textAlign: "right", fontWeight: 900 }}>
+                            {money(item.subtotal)}
+                          </td>
+                          <td className="text-center">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              style={{ borderRadius: 8, fontWeight: 800 }}
+                              onClick={() => removeItemFromOrder(item.productId)}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+
+                      {orderItems.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="text-center text-muted py-3">
+                            No products added yet. Select a product and click Add.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+
+                    <tfoot>
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: "right", fontWeight: 900 }}>
+                          Grand Total
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: 900 }}>
+                          {money(orderTotal)}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <div className="p-3 d-flex justify-content-end">
+                  <button
+                    className="btn btn-primary"
                     style={{
-                      ...hintPillStyle,
-                      background: "rgba(236,253,245,.75)",
-                      borderColor: "rgba(167,243,208,.9)",
-                      color: "#065F46",
+                      borderRadius: 12,
+                      fontWeight: 900,
+                      padding: "10px 18px",
                     }}
+                    disabled={!canCreate}
                   >
-                    Preview Total:{" "}
-                    <span style={{ color: "#0F172A" }}>
-                      {qtyValid ? `৳${previewTotal}` : "-"}
-                    </span>
-                  </span>
+                    Create Order
+                  </button>
                 </div>
               </div>
             </form>
