@@ -1,4 +1,4 @@
-# Smart Multi-Branch Inventory and Distribution Management System with Real-Time Tracking
+# Smart Multi-Branch Inventory and Distribution Management System
 
 A full-stack web-based inventory and distribution management system designed to manage products, stock, branches, distributors, business orders, stock transfers, deliveries, reports, and notifications across multiple branches.
 
