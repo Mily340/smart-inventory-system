@@ -174,6 +174,8 @@ export default function Deliveries() {
     e.preventDefault();
     setError("");
 
+    const cleanDestinationAddress = destinationAddress.trim();
+
     if (!orderId) {
       setError("Please select an eligible order.");
       return;
@@ -181,6 +183,11 @@ export default function Deliveries() {
 
     if (!riderId) {
       setError("Please select a rider.");
+      return;
+    }
+
+    if (!cleanDestinationAddress) {
+      setError("Please enter a destination address.");
       return;
     }
 
@@ -195,7 +202,7 @@ export default function Deliveries() {
       await client.post("/deliveries", {
         orderId,
         riderId,
-        destinationAddress: destinationAddress.trim() || null,
+        destinationAddress: cleanDestinationAddress,
       });
 
       setOrderId("");
@@ -385,9 +392,6 @@ export default function Deliveries() {
                       ))
                     )}
                   </select>
-
-                  <div className="form-text">
-                  </div>
                 </div>
 
                 <div className="col-12 col-md-3">
@@ -414,20 +418,23 @@ export default function Deliveries() {
                     )}
                   </select>
 
-                  <div className="form-text">
-                    {riders.length === 0 ? "No delivery riders found." : null}
-                  </div>
+                  {riders.length === 0 ? (
+                    <div className="form-text">No delivery riders found.</div>
+                  ) : null}
                 </div>
 
                 <div className="col-12 col-md-4">
-                  <label className="form-label small text-muted mb-1">Destination</label>
+                  <label className="form-label small text-muted mb-1">
+                    Destination <span className="text-danger">*</span>
+                  </label>
 
                   <input
                     className="form-control"
                     style={{ borderRadius: 12 }}
-                    placeholder="Destination Address"
+                    placeholder="Enter full destination address"
                     value={destinationAddress}
                     onChange={(e) => setDestinationAddress(e.target.value)}
+                    required
                   />
                 </div>
 
@@ -440,7 +447,12 @@ export default function Deliveries() {
                       padding: "10px 12px",
                       whiteSpace: "nowrap",
                     }}
-                    disabled={!orderId || !riderId || deliverableOrders.length === 0}
+                    disabled={
+                      !orderId ||
+                      !riderId ||
+                      !destinationAddress.trim() ||
+                      deliverableOrders.length === 0
+                    }
                   >
                     Create
                   </button>
@@ -475,8 +487,7 @@ export default function Deliveries() {
                       <th style={{ width: 110 }}>Order</th>
                       <th style={{ minWidth: 170 }}>Rider</th>
                       <th style={{ width: 140 }}>Status</th>
-                      <th style={{ minWidth: 220 }}>Destination</th>
-                      <th style={{ minWidth: 170 }}>Latest Location</th>
+                      <th style={{ minWidth: 260 }}>Destination</th>
                       <th style={{ width: 150, textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
@@ -494,18 +505,13 @@ export default function Deliveries() {
                           <span style={badgeStyle(d.status)}>{d.status}</span>
                         </td>
                         <td>{d.destinationAddress || "-"}</td>
-                        <td>
-                          {d.locations && d.locations.length > 0
-                            ? `${d.locations[0].latitude}, ${d.locations[0].longitude}`
-                            : "-"}
-                        </td>
                         <td className="text-center">{renderStatusButtons(d)}</td>
                       </tr>
                     ))}
 
                     {deliveries.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center text-muted">
+                        <td colSpan="6" className="text-center text-muted">
                           No deliveries found
                         </td>
                       </tr>
