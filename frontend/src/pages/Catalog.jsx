@@ -11,9 +11,11 @@ export default function Catalog() {
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [branches, setBranches] = useState([]);
 
   const [q, setQ] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [branchId, setBranchId] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,13 +35,15 @@ export default function Catalog() {
     setError("");
 
     try {
-      const [pRes, cRes] = await Promise.all([
+      const [pRes, cRes, bRes] = await Promise.all([
         client.get("/public/products"),
         client.get("/public/categories"),
+        client.get("/branches/public"),
       ]);
 
       setProducts(pRes.data?.data || []);
       setCategories(cRes.data?.data || []);
+      setBranches(bRes.data?.data || []);
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load catalog");
     } finally {
@@ -51,19 +55,53 @@ export default function Catalog() {
     fetchCatalog();
   }, []);
 
+  const getAvailableBranches = (product) => {
+    if (Array.isArray(product.availableBranches)) {
+      return product.availableBranches;
+    }
+
+    return [];
+  };
+
+  const getAvailableBranchCount = (product) => {
+    if (typeof product.availableBranchCount === "number") {
+      return product.availableBranchCount;
+    }
+
+    return getAvailableBranches(product).length;
+  };
+
+  const selectedCategory = categories.find((c) => String(c.id) === String(categoryId));
+  const selectedBranch = branches.find((b) => String(b.id) === String(branchId));
+
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
 
     return (products || []).filter((p) => {
-      const okCat = categoryId ? p.categoryId === categoryId : true;
+      const okCat = categoryId ? String(p.categoryId) === String(categoryId) : true;
+
+      const availableBranches = getAvailableBranches(p);
+
+      const branchKeys = [branchId, selectedBranch?.id, selectedBranch?.code, selectedBranch?.name]
+        .filter(Boolean)
+        .map((v) => String(v).trim().toLowerCase());
+
+      const okBranch = branchId
+        ? availableBranches.some((b) => {
+            const availableKeys = [b.branchId, b.id, b.code, b.name]
+              .filter(Boolean)
+              .map((v) => String(v).trim().toLowerCase());
+
+            return availableKeys.some((key) => branchKeys.includes(key));
+          })
+        : true;
+
       const text = `${p.name || ""} ${p.sku || ""} ${p.description || ""}`.toLowerCase();
       const okQ = query ? text.includes(query) : true;
 
-      return okCat && okQ;
+      return okCat && okBranch && okQ;
     });
-  }, [products, q, categoryId]);
-
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  }, [products, q, categoryId, branchId, selectedBranch]);
 
   const logout = () => {
     sessionStorage.removeItem("token");
@@ -78,6 +116,7 @@ export default function Catalog() {
   const clearFilters = () => {
     setQ("");
     setCategoryId("");
+    setBranchId("");
   };
 
   const pageStyle = {
@@ -214,6 +253,28 @@ export default function Catalog() {
             border: 1px solid rgba(148,163,184,.22);
           }
 
+          .catalog-availability-box {
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(239,246,255,.95), rgba(245,243,255,.75));
+            border: 1px solid rgba(147,197,253,.45);
+            padding: 10px 12px;
+            text-align: left;
+          }
+
+          .catalog-branch-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 999px;
+            padding: 5px 8px;
+            background: rgba(255,255,255,.88);
+            border: 1px solid rgba(148,163,184,.28);
+            color: #334155;
+            font-size: 11px;
+            font-weight: 800;
+            max-width: 100%;
+          }
+
           @keyframes skeletonMove {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
@@ -228,7 +289,6 @@ export default function Catalog() {
       </style>
 
       <div className="container" style={shellStyle}>
-        {/* Compact Top Navigation */}
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
             <div
@@ -295,7 +355,6 @@ export default function Catalog() {
           </div>
         ) : null}
 
-        {/* Compact Catalog Header + Filters */}
         <section className="mb-3 catalog-fade-up" style={compactHeaderStyle}>
           <div
             style={{
@@ -343,7 +402,8 @@ export default function Catalog() {
                 </h1>
 
                 <p className="text-muted mb-0" style={{ fontSize: 13, lineHeight: 1.45 }}>
-                  Search by name, SKU, description, or category.
+                  Search by name, SKU, description, category, or select a branch to check
+                  availability.
                 </p>
               </div>
 
@@ -368,6 +428,15 @@ export default function Catalog() {
                   </div>
 
                   <div className="catalog-mini-stat">
+                    <div style={{ fontSize: 18, fontWeight: 950, color: "#0F172A" }}>
+                      {branches.length}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: 11, fontWeight: 800 }}>
+                      Branches
+                    </div>
+                  </div>
+
+                  <div className="catalog-mini-stat">
                     <div style={{ fontSize: 18, fontWeight: 950, color: "#4F46E5" }}>
                       {filtered.length}
                     </div>
@@ -382,7 +451,7 @@ export default function Catalog() {
             <div className="card" style={panelStyle}>
               <div className="card-body" style={{ padding: 12 }}>
                 <div className="row g-2 align-items-center">
-                  <div className="col-12 col-lg-7">
+                  <div className="col-12 col-lg-5">
                     <div className="input-group">
                       <span
                         className="input-group-text"
@@ -395,6 +464,7 @@ export default function Catalog() {
                       >
                         <i className="bi bi-search text-muted"></i>
                       </span>
+
                       <input
                         className="form-control"
                         style={{
@@ -421,6 +491,23 @@ export default function Catalog() {
                         <option key={c.id} value={c.id}>
                           {c.code ? `${c.code} - ` : ""}
                           {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-12 col-lg-2">
+                    <select
+                      className="form-select"
+                      style={inputStyle}
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                    >
+                      <option value="">All Branches</option>
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.code ? `${b.code} - ` : ""}
+                          {b.name}
                         </option>
                       ))}
                     </select>
@@ -463,8 +550,12 @@ export default function Catalog() {
                 <div className="text-muted mt-2" style={{ fontSize: 12, fontWeight: 700 }}>
                   {loading
                     ? "Loading..."
+                    : selectedCategory && selectedBranch
+                    ? `${filtered.length} product(s) in ${selectedCategory.name} available at ${selectedBranch.name}`
                     : selectedCategory
                     ? `${filtered.length} product(s) in ${selectedCategory.name}`
+                    : selectedBranch
+                    ? `${filtered.length} product(s) available at ${selectedBranch.name}`
                     : `Showing ${filtered.length} of ${products.length} products`}
                 </div>
               </div>
@@ -472,7 +563,6 @@ export default function Catalog() {
           </div>
         </section>
 
-        {/* Product Grid */}
         {loading ? (
           <div className="row g-3">
             {[1, 2, 3, 4, 5, 6].map((x) => (
@@ -483,135 +573,203 @@ export default function Catalog() {
           </div>
         ) : (
           <div className="row g-3">
-            {filtered.map((p, index) => (
-              <div className="col-12 col-md-6 col-xl-4 catalog-fade-up" key={p.id}>
-                <div
-                  className="card h-100 catalog-product-card"
-                  style={{ animationDelay: `${Math.min(index * 0.04, 0.28)}s` }}
-                >
-                  <div className="catalog-image-wrap">
-                    <img
-                      src={p.imageUrl || FALLBACK_IMG}
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        if (e.currentTarget.src !== FALLBACK_IMG) {
-                          e.currentTarget.src = FALLBACK_IMG;
-                        }
-                      }}
-                    />
+            {filtered.map((p, index) => {
+              const availableBranches = getAvailableBranches(p);
+              const availableBranchCount = getAvailableBranchCount(p);
+              const shownBranches = availableBranches.slice(0, 3);
+              const remainingBranchCount = Math.max(availableBranchCount - shownBranches.length, 0);
 
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        background:
-                          "linear-gradient(180deg, rgba(15,23,42,0) 42%, rgba(15,23,42,.38) 100%)",
-                        pointerEvents: "none",
-                      }}
-                    ></div>
+              return (
+                <div className="col-12 col-md-6 col-xl-4 catalog-fade-up" key={p.id}>
+                  <div
+                    className="card h-100 catalog-product-card"
+                    style={{ animationDelay: `${Math.min(index * 0.04, 0.28)}s` }}
+                  >
+                    <div className="catalog-image-wrap">
+                      <img
+                        src={p.imageUrl || FALLBACK_IMG}
+                        alt={p.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          if (e.currentTarget.src !== FALLBACK_IMG) {
+                            e.currentTarget.src = FALLBACK_IMG;
+                          }
+                        }}
+                      />
 
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 12,
-                        left: 12,
-                        padding: "6px 10px",
-                        borderRadius: 999,
-                        background: "rgba(255,255,255,.88)",
-                        color: "#0F172A",
-                        border: "1px solid rgba(255,255,255,.72)",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        backdropFilter: "blur(8px)",
-                      }}
-                    >
-                      {p.category?.name || "Category"}
-                    </span>
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background:
+                            "linear-gradient(180deg, rgba(15,23,42,0) 42%, rgba(15,23,42,.38) 100%)",
+                          pointerEvents: "none",
+                        }}
+                      ></div>
 
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 12,
-                        right: 12,
-                        padding: "6px 10px",
-                        borderRadius: 999,
-                        background: "rgba(79,70,229,.92)",
-                        color: "#FFFFFF",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        boxShadow: "0 8px 16px rgba(79,70,229,.22)",
-                      }}
-                    >
-                      {p.code || "Product"}
-                    </span>
-                  </div>
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 12,
+                          left: 12,
+                          padding: "6px 10px",
+                          borderRadius: 999,
+                          background: "rgba(255,255,255,.88)",
+                          color: "#0F172A",
+                          border: "1px solid rgba(255,255,255,.72)",
+                          fontSize: 12,
+                          fontWeight: 900,
+                          backdropFilter: "blur(8px)",
+                        }}
+                      >
+                        {p.category?.name || "Category"}
+                      </span>
 
-                  <div className="card-body text-center" style={{ padding: "15px 18px 11px" }}>
-                    <h5
-                      className="mb-1"
-                      style={{
-                        fontWeight: 950,
-                        color: "#111827",
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {p.name}
-                    </h5>
-
-                    <div className="text-muted mb-2" style={{ fontSize: 13, fontWeight: 700 }}>
-                      SKU: {p.sku || "-"}
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 12,
+                          right: 12,
+                          padding: "6px 10px",
+                          borderRadius: 999,
+                          background: "rgba(79,70,229,.92)",
+                          color: "#FFFFFF",
+                          fontSize: 12,
+                          fontWeight: 900,
+                          boxShadow: "0 8px 16px rgba(79,70,229,.22)",
+                        }}
+                      >
+                        {p.code || "Product"}
+                      </span>
                     </div>
 
-                    <div
-                      className="mb-2"
-                      style={{
-                        fontSize: 19,
-                        fontWeight: 950,
-                        color: "#4F46E5",
-                      }}
-                    >
-                      {money(p.price)}
+                    <div className="card-body text-center" style={{ padding: "15px 18px 11px" }}>
+                      <h5
+                        className="mb-1"
+                        style={{
+                          fontWeight: 950,
+                          color: "#111827",
+                          fontSize: 20,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {p.name}
+                      </h5>
+
+                      <div className="text-muted mb-2" style={{ fontSize: 13, fontWeight: 700 }}>
+                        SKU: {p.sku || "-"}
+                      </div>
+
+                      <div
+                        className="mb-2"
+                        style={{
+                          fontSize: 19,
+                          fontWeight: 950,
+                          color: "#4F46E5",
+                        }}
+                      >
+                        {money(p.price)}
+                      </div>
+
+                      <div
+                        className="text-muted mx-auto mb-3"
+                        style={{
+                          minHeight: 40,
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          maxWidth: 330,
+                        }}
+                      >
+                        {p.description || "No description available."}
+                      </div>
+
+                      <div className="catalog-availability-box">
+                        <div
+                          className="d-flex justify-content-between align-items-center gap-2 mb-2"
+                          style={{ fontSize: 12 }}
+                        >
+                          <span style={{ fontWeight: 950, color: "#0F172A" }}>
+                            <i
+                              className="bi bi-building-check me-1"
+                              style={{ color: "#2563EB" }}
+                            ></i>
+                            Branch Availability
+                          </span>
+
+                          <span
+                            style={{
+                              color: availableBranchCount > 0 ? "#047857" : "#B91C1C",
+                              fontWeight: 900,
+                            }}
+                          >
+                            {availableBranchCount > 0
+                              ? `${availableBranchCount} branch(es)`
+                              : "Not available"}
+                          </span>
+                        </div>
+
+                        {availableBranchCount > 0 ? (
+                          <div className="d-flex flex-wrap gap-1">
+                            {shownBranches.map((branch) => (
+                              <span
+                                className="catalog-branch-pill"
+                                key={branch.branchId || branch.id || branch.code || branch.name}
+                              >
+                                <i className="bi bi-geo-alt" style={{ color: "#2563EB" }}></i>
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    maxWidth: 125,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                  title={branch.name}
+                                >
+                                  {branch.name || "Branch"}
+                                </span>
+                              </span>
+                            ))}
+
+                            {remainingBranchCount > 0 ? (
+                              <span className="catalog-branch-pill">
+                                +{remainingBranchCount} more
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="text-muted" style={{ fontSize: 12, fontWeight: 700 }}>
+                            Currently unavailable in active branches.
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div
-                      className="text-muted mx-auto"
-                      style={{
-                        minHeight: 40,
-                        fontSize: 13,
-                        lineHeight: 1.5,
-                        maxWidth: 330,
-                      }}
-                    >
-                      {p.description || "No description available."}
+                    <div className="card-footer bg-white border-0 pt-0 pb-3 px-3">
+                      <button
+                        className="btn btn-primary w-100"
+                        style={{
+                          borderRadius: 15,
+                          fontWeight: 900,
+                          padding: "9px 12px",
+                          boxShadow: "0 10px 18px rgba(79,70,229,.18)",
+                        }}
+                        onClick={() => navigate(`/catalog/${p.id}`)}
+                      >
+                        View Details
+                        <i className="bi bi-arrow-right ms-1"></i>
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="card-footer bg-white border-0 pt-0 pb-3 px-3">
-                    <button
-                      className="btn btn-primary w-100"
-                      style={{
-                        borderRadius: 15,
-                        fontWeight: 900,
-                        padding: "9px 12px",
-                        boxShadow: "0 10px 18px rgba(79,70,229,.18)",
-                      }}
-                      onClick={() => navigate(`/catalog/${p.id}`)}
-                    >
-                      View Details
-                      <i className="bi bi-arrow-right ms-1"></i>
-                    </button>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {filtered.length === 0 ? (
               <div className="col-12">
@@ -643,6 +801,7 @@ export default function Catalog() {
                   <div style={{ fontWeight: 900, color: "#0F172A", fontSize: 18 }}>
                     No products found
                   </div>
+
                   <div style={{ fontSize: 13, marginTop: 4 }}>
                     Try clearing filters or searching with another keyword.
                   </div>
