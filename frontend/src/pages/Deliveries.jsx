@@ -80,8 +80,20 @@ export default function Deliveries() {
   const canManageStatus = isSuperAdmin || isInventoryOfficer || isBranchManager || isRider;
 
   const deliverableOrders = useMemo(() => {
-    return orders.filter((o) => ["APPROVED", "PACKED", "DISPATCHED", "DELIVERED"].includes(o.status));
-  }, [orders]);
+    const existingDeliveryOrderIds = new Set(
+      deliveries
+        .map((delivery) => delivery.orderId || delivery.order?.id)
+        .filter(Boolean)
+    );
+
+    return orders.filter((order) => {
+      const status = String(order.status || "").toUpperCase();
+      const isEligibleStatus = ["APPROVED", "PACKED", "DISPATCHED"].includes(status);
+      const alreadyHasDelivery = existingDeliveryOrderIds.has(order.id);
+
+      return isEligibleStatus && !alreadyHasDelivery;
+    });
+  }, [orders, deliveries]);
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
@@ -109,24 +121,40 @@ export default function Deliveries() {
 
       const responses = await Promise.all(requests);
 
-      const o = responses[0].data?.data || [];
-      const d = responses[1].data?.data || [];
-      const r = canCreateDelivery ? responses[2].data?.data || [] : [];
+      const fetchedOrders = responses[0].data?.data || [];
+      const fetchedDeliveries = responses[1].data?.data || [];
+      const fetchedRiders = canCreateDelivery ? responses[2].data?.data || [] : [];
 
-      setOrders(o);
-      setDeliveries(d);
-      setRiders(r);
+      setOrders(fetchedOrders);
+      setDeliveries(fetchedDeliveries);
+      setRiders(fetchedRiders);
 
-      const filteredOrders = o.filter((order) =>
-        ["APPROVED", "PACKED", "DISPATCHED", "DELIVERED"].includes(order.status)
+      const existingDeliveryOrderIds = new Set(
+        fetchedDeliveries
+          .map((delivery) => delivery.orderId || delivery.order?.id)
+          .filter(Boolean)
       );
 
-      if (!orderId && filteredOrders.length > 0) {
-        setOrderId(filteredOrders[0].id);
+      const filteredOrders = fetchedOrders.filter((order) => {
+        const status = String(order.status || "").toUpperCase();
+        const isEligibleStatus = ["APPROVED", "PACKED", "DISPATCHED"].includes(status);
+        const alreadyHasDelivery = existingDeliveryOrderIds.has(order.id);
+
+        return isEligibleStatus && !alreadyHasDelivery;
+      });
+
+      if (filteredOrders.length > 0) {
+        const selectedOrderStillAvailable = filteredOrders.some((order) => order.id === orderId);
+        setOrderId(selectedOrderStillAvailable ? orderId : filteredOrders[0].id);
+      } else {
+        setOrderId("");
       }
 
-      if (!riderId && r.length > 0) {
-        setRiderId(r[0].id);
+      if (fetchedRiders.length > 0) {
+        const selectedRiderStillAvailable = fetchedRiders.some((rider) => rider.id === riderId);
+        setRiderId(selectedRiderStillAvailable ? riderId : fetchedRiders[0].id);
+      } else {
+        setRiderId("");
       }
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to load deliveries";
@@ -147,7 +175,7 @@ export default function Deliveries() {
     setError("");
 
     if (!orderId) {
-      setError("Please select an order.");
+      setError("Please select an eligible order.");
       return;
     }
 
@@ -156,13 +184,21 @@ export default function Deliveries() {
       return;
     }
 
+    const selectedOrder = deliverableOrders.find((order) => order.id === orderId);
+
+    if (!selectedOrder) {
+      setError("This order is not eligible for delivery or already has a delivery.");
+      return;
+    }
+
     try {
       await client.post("/deliveries", {
         orderId,
         riderId,
-        destinationAddress,
+        destinationAddress: destinationAddress.trim() || null,
       });
 
+      setOrderId("");
       setDestinationAddress("");
       await fetchAll();
     } catch (err) {
@@ -306,7 +342,7 @@ export default function Deliveries() {
                     Create Delivery
                   </div>
                   <div className="text-muted" style={{ fontSize: 13 }}>
-                    Select an order, assign a rider, and enter the destination address.
+                    Select an eligible order, assign a rider, and enter the destination address.
                   </div>
                 </div>
 
@@ -320,7 +356,7 @@ export default function Deliveries() {
                     background: "rgba(255,255,255,.85)",
                   }}
                 >
-                  Rider dropdown enabled
+                  Approved/Packed/Dispatched orders only
                 </span>
               </div>
             </div>
@@ -329,42 +365,53 @@ export default function Deliveries() {
               <form onSubmit={createDelivery} className="row g-2 align-items-end">
                 <div className="col-12 col-md-4">
                   <label className="form-label small text-muted mb-1">Order</label>
+
                   <select
                     className="form-select"
                     style={{ borderRadius: 12 }}
                     value={orderId}
                     onChange={(e) => setOrderId(e.target.value)}
                     required
+                    disabled={deliverableOrders.length === 0}
                   >
-                    {deliverableOrders.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.code ? `${o.code} - ` : ""}
-                        {o.distributor?.name || "Distributor"} ({o.status})
-                      </option>
-                    ))}
+                    {deliverableOrders.length === 0 ? (
+                      <option value="">No eligible orders available</option>
+                    ) : (
+                      deliverableOrders.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.code ? `${o.code} - ` : ""}
+                          {o.distributor?.name || "Distributor"} ({o.status})
+                        </option>
+                      ))
+                    )}
                   </select>
 
                   <div className="form-text">
-                    {deliverableOrders.length === 0 ? "No deliverable orders available." : null}
                   </div>
                 </div>
 
                 <div className="col-12 col-md-3">
                   <label className="form-label small text-muted mb-1">Rider</label>
+
                   <select
                     className="form-select"
                     style={{ borderRadius: 12 }}
                     value={riderId}
                     onChange={(e) => setRiderId(e.target.value)}
                     required
+                    disabled={riders.length === 0}
                   >
-                    {riders.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.code ? `${r.code} - ` : ""}
-                        {r.fullName}
-                        {r.branch?.name ? ` (${r.branch.name})` : ""}
-                      </option>
-                    ))}
+                    {riders.length === 0 ? (
+                      <option value="">No riders available</option>
+                    ) : (
+                      riders.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.code ? `${r.code} - ` : ""}
+                          {r.fullName}
+                          {r.branch?.name ? ` (${r.branch.name})` : ""}
+                        </option>
+                      ))
+                    )}
                   </select>
 
                   <div className="form-text">
@@ -374,6 +421,7 @@ export default function Deliveries() {
 
                 <div className="col-12 col-md-4">
                   <label className="form-label small text-muted mb-1">Destination</label>
+
                   <input
                     className="form-control"
                     style={{ borderRadius: 12 }}
@@ -392,7 +440,7 @@ export default function Deliveries() {
                       padding: "10px 12px",
                       whiteSpace: "nowrap",
                     }}
-                    disabled={!orderId || !riderId}
+                    disabled={!orderId || !riderId || deliverableOrders.length === 0}
                   >
                     Create
                   </button>
@@ -472,7 +520,7 @@ export default function Deliveries() {
                 ? "Branch Manager can assign riders to deliveries for accessible orders."
                 : isRider
                 ? "Delivery Rider can update assigned delivery progress."
-                : "Admin Staff can create and manage delivery workflow."}
+                : "Admin Staff can create and manage delivery workflow. Orders already assigned to delivery are hidden from the create delivery dropdown."}
             </div>
           </div>
         </div>
