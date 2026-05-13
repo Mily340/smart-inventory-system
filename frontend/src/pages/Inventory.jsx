@@ -69,6 +69,26 @@ const getStockStatus = (qty, reorderLevel) => {
   };
 };
 
+const stockOutReasons = [
+  "Damaged item",
+  "Expired item",
+  "Lost item",
+  "Returned to supplier",
+  "Manual correction",
+  "Internal use",
+  "Other",
+];
+
+const stockActionButtonStyle = {
+  borderRadius: 10,
+  fontWeight: 800,
+  minHeight: 31,
+  whiteSpace: "nowrap",
+  padding: "5px 8px",
+  fontSize: 12.5,
+  lineHeight: 1.2,
+};
+
 export default function Inventory() {
   const navigate = useNavigate();
 
@@ -81,6 +101,7 @@ export default function Inventory() {
 
   const [qty, setQty] = useState("");
   const [reorderLevel, setReorderLevel] = useState("");
+  const [stockOutReason, setStockOutReason] = useState("Damaged item");
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -329,7 +350,7 @@ export default function Inventory() {
         branchId,
         productId,
         quantity: qtyNum,
-        reason: "Frontend stock in",
+        reason: "Manual stock in",
       });
 
       setQty("");
@@ -347,6 +368,11 @@ export default function Inventory() {
 
     if (!checkActiveBranchBeforeAction()) return;
 
+    if (!stockOutReason.trim()) {
+      setError("Please select a stock-out reason.");
+      return;
+    }
+
     setActionLoading(true);
 
     try {
@@ -354,10 +380,11 @@ export default function Inventory() {
         branchId,
         productId,
         quantity: qtyNum,
-        reason: "Frontend stock out",
+        reason: stockOutReason,
       });
 
       setQty("");
+      setStockOutReason("Damaged item");
       await fetchAll(branchId);
     } catch (err) {
       setError(err?.response?.data?.message || "Stock-out failed");
@@ -670,11 +697,28 @@ export default function Inventory() {
                     />
                   </div>
 
-                  <div className="col-6 col-lg-4">
+                  <div className="col-12 col-lg-4">
+                    <label className="form-label small text-muted mb-1">Stock Out Reason</label>
+                    <select
+                      className="form-select form-select-sm"
+                      style={inputStyle}
+                      value={stockOutReason}
+                      onChange={(e) => setStockOutReason(e.target.value)}
+                      disabled={!selectedBranchIsActive}
+                    >
+                      {stockOutReasons.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-6 col-lg-2">
                     <form onSubmit={stockIn}>
                       <button
                         className="btn btn-success btn-sm w-100"
-                        style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
+                        style={stockActionButtonStyle}
                         type="submit"
                         disabled={!canDoQty}
                       >
@@ -684,19 +728,24 @@ export default function Inventory() {
                     </form>
                   </div>
 
-                  <div className="col-6 col-lg-4">
+                  <div className="col-6 col-lg-2">
                     <form onSubmit={stockOut}>
                       <button
                         className="btn btn-danger btn-sm w-100"
-                        style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
+                        style={stockActionButtonStyle}
                         type="submit"
                         disabled={!canDoQty}
                       >
                         <i className="bi bi-dash-circle me-1"></i>
-                        Stock Out
+                        Stock-Out
                       </button>
                     </form>
                   </div>
+                </div>
+
+                <div className="text-muted mt-1" style={{ fontSize: 11.5 }}>
+                  Stock Out reason is used only when manually reducing stock, such as damaged,
+                  expired, lost, returned, or correction cases.
                 </div>
 
                 <hr className="my-2" />
@@ -718,7 +767,12 @@ export default function Inventory() {
                   <div className="col-12 col-lg-4">
                     <button
                       className="btn btn-primary btn-sm w-100"
-                      style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
+                      style={{
+                        borderRadius: 10,
+                        fontWeight: 800,
+                        minHeight: 31,
+                        whiteSpace: "nowrap",
+                      }}
                       type="submit"
                       disabled={!canDoReorder}
                     >
@@ -802,7 +856,8 @@ export default function Inventory() {
             )}
 
             <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
-              Stock operations are available only for active branches. Historical inventory data can remain stored for inactive branches.
+              Stock operations are available only for active branches. Stock Out is used for manual
+              reductions such as damage, expiry, loss, supplier return, or correction.
             </div>
           </div>
         </div>
