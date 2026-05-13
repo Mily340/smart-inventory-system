@@ -10,10 +10,10 @@ const typeStyle = (type) => {
   const base = {
     display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    padding: "6px 10px",
+    gap: 5,
+    padding: "4px 8px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 800,
     border: "1px solid transparent",
     whiteSpace: "nowrap",
@@ -84,8 +84,36 @@ const formatDate = (value) => {
   });
 };
 
+const isDeliveryRelatedNotification = (notification) => {
+  const type = String(notification?.type || "").toUpperCase();
+  const title = String(notification?.title || "").toLowerCase();
+  const message = String(notification?.message || "").toLowerCase();
+
+  return (
+    type === "DELIVERY_STATUS" ||
+    title.includes("delivery") ||
+    message.includes("delivery") ||
+    title.includes("rider") ||
+    message.includes("rider")
+  );
+};
+
+const sortUnreadFirstNewestFirst = (notifications) => {
+  return [...notifications].sort((a, b) => {
+    if (a.isRead !== b.isRead) return a.isRead ? 1 : -1;
+
+    const dateA = new Date(a.createdAt || 0).getTime();
+    const dateB = new Date(b.createdAt || 0).getTime();
+
+    return dateB - dateA;
+  });
+};
+
 export default function Notifications() {
   const navigate = useNavigate();
+
+  const role = sessionStorage.getItem("role") || "";
+  const isRider = role === "DELIVERY_RIDER";
 
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("ALL");
@@ -121,19 +149,35 @@ export default function Notifications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const unreadCount = useMemo(() => items.filter((n) => !n.isRead).length, [items]);
-  const readCount = useMemo(() => items.filter((n) => n.isRead).length, [items]);
+  const roleFilteredItems = useMemo(() => {
+    if (!isRider) return items;
+    return items.filter(isDeliveryRelatedNotification);
+  }, [items, isRider]);
+
+  const sortedVisibleItems = useMemo(() => {
+    return sortUnreadFirstNewestFirst(roleFilteredItems);
+  }, [roleFilteredItems]);
+
+  const unreadCount = useMemo(
+    () => roleFilteredItems.filter((n) => !n.isRead).length,
+    [roleFilteredItems]
+  );
+
+  const readCount = useMemo(
+    () => roleFilteredItems.filter((n) => n.isRead).length,
+    [roleFilteredItems]
+  );
 
   const filteredItems = useMemo(() => {
-    if (filter === "UNREAD") return items.filter((n) => !n.isRead);
-    if (filter === "READ") return items.filter((n) => n.isRead);
-    return items;
-  }, [items, filter]);
+    if (filter === "UNREAD") return sortedVisibleItems.filter((n) => !n.isRead);
+    if (filter === "READ") return sortedVisibleItems.filter((n) => n.isRead);
+    return sortedVisibleItems;
+  }, [sortedVisibleItems, filter]);
 
   const recentTypeCount = useMemo(() => {
-    const unique = new Set(items.map((n) => n.type).filter(Boolean));
+    const unique = new Set(roleFilteredItems.map((n) => n.type).filter(Boolean));
     return unique.size;
-  }, [items]);
+  }, [roleFilteredItems]);
 
   const markRead = async (id) => {
     setError("");
@@ -150,20 +194,20 @@ export default function Notifications() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   return (
@@ -171,13 +215,15 @@ export default function Notifications() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Notifications
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
-              Track system alerts, transfer updates, stock alerts, and operational messages.
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
+              {isRider
+                ? "Track delivery assignments and delivery status messages."
+                : "Track system alerts, transfer updates, stock alerts, and operational messages."}
             </div>
           </div>
 
@@ -186,7 +232,7 @@ export default function Notifications() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             onClick={fetchNotifications}
@@ -198,17 +244,17 @@ export default function Notifications() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="row g-3 mb-4">
+        <div className="row g-2 mb-3">
           <SummaryCard
             title="Total"
-            value={items.length}
-            icon="bi-bell"
-            hint="All notifications"
+            value={roleFilteredItems.length}
+            icon={isRider ? "bi-box-seam" : "bi-bell"}
+            hint={isRider ? "Delivery notifications" : "All notifications"}
           />
 
           <SummaryCard
@@ -229,19 +275,21 @@ export default function Notifications() {
             title="Types"
             value={recentTypeCount}
             icon="bi-tags"
-            hint="Alert categories"
+            hint={isRider ? "Delivery categories" : "Alert categories"}
           />
         </div>
 
-        <div className="card mb-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Notification Filter
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  Filter messages by read status.
+                <div className="text-muted" style={{ fontSize: 12 }}>
+                  {isRider
+                    ? "Delivery riders only see delivery-related messages."
+                    : "Filter messages by read status."}
                 </div>
               </div>
 
@@ -249,7 +297,7 @@ export default function Notifications() {
                 className="text-muted"
                 style={{
                   fontSize: 12,
-                  padding: "6px 10px",
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -260,7 +308,7 @@ export default function Notifications() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             <div className="d-flex flex-wrap gap-2">
               {[
                 { key: "ALL", label: "All" },
@@ -270,11 +318,13 @@ export default function Notifications() {
                 <button
                   key={f.key}
                   type="button"
-                  className={`btn btn-sm ${filter === f.key ? "btn-primary" : "btn-outline-primary"}`}
+                  className={`btn btn-sm ${
+                    filter === f.key ? "btn-primary" : "btn-outline-primary"
+                  }`}
                   style={{
                     borderRadius: 999,
                     fontWeight: 800,
-                    padding: "7px 14px",
+                    padding: "5px 12px",
                   }}
                   onClick={() => setFilter(f.key)}
                 >
@@ -286,7 +336,7 @@ export default function Notifications() {
         </div>
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Notification List
@@ -298,20 +348,22 @@ export default function Notifications() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading notifications...</div>
             ) : filteredItems.length === 0 ? (
               <div
-                className="text-center text-muted py-5"
+                className="text-center text-muted py-4"
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 14,
                   border: "1px dashed rgba(148,163,184,.5)",
                   background: "rgba(248,250,252,.7)",
                 }}
               >
-                <i className="bi bi-bell-slash" style={{ fontSize: 28 }}></i>
-                <div style={{ marginTop: 8, fontWeight: 700 }}>No notifications found</div>
+                <i className="bi bi-bell-slash" style={{ fontSize: 24 }}></i>
+                <div style={{ marginTop: 6, fontWeight: 700 }}>
+                  {isRider ? "No delivery notifications found" : "No notifications found"}
+                </div>
               </div>
             ) : (
               <div className="d-flex flex-column gap-2">
@@ -321,30 +373,36 @@ export default function Notifications() {
                   return (
                     <div
                       key={n.id}
-                      className="d-flex flex-wrap justify-content-between align-items-start gap-3"
+                      className="d-flex flex-wrap justify-content-between align-items-center gap-2"
                       style={{
-                        borderRadius: 16,
+                        borderRadius: 14,
                         border: n.isRead
-                          ? "1px solid rgba(148,163,184,.25)"
+                          ? "1px solid rgba(148,163,184,.22)"
                           : "1px solid rgba(59,130,246,.22)",
                         background: n.isRead
                           ? "rgba(255,255,255,.72)"
                           : "linear-gradient(180deg, rgba(239,246,255,.9), rgba(255,255,255,.95))",
-                        padding: "14px 16px",
+                        padding: "9px 12px",
                         boxShadow: n.isRead
                           ? "none"
-                          : "0 8px 18px rgba(37,99,235,.06)",
-                        opacity: n.isRead ? 0.78 : 1,
+                          : "0 5px 12px rgba(37,99,235,.05)",
+                        opacity: n.isRead ? 0.8 : 1,
                       }}
                     >
                       <div style={{ minWidth: 0, flex: "1 1 520px" }}>
-                        <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
                           <span style={badge}>
                             <i className={`bi ${badge.icon}`}></i>
                             {badge.label}
                           </span>
 
-                          <span style={{ fontWeight: 900, color: "#0F172A" }}>
+                          <span
+                            style={{
+                              fontWeight: 900,
+                              color: "#0F172A",
+                              fontSize: 15,
+                            }}
+                          >
                             {n.title || "Notification"}
                           </span>
 
@@ -353,9 +411,9 @@ export default function Notifications() {
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                padding: "5px 9px",
+                                padding: "3px 7px",
                                 borderRadius: 999,
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: 900,
                                 background: "#FEF3C7",
                                 color: "#92400E",
@@ -369,10 +427,10 @@ export default function Notifications() {
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 5,
-                                padding: "5px 9px",
+                                gap: 4,
+                                padding: "3px 7px",
                                 borderRadius: 999,
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: 800,
                                 background: "#F3F4F6",
                                 color: "#4B5563",
@@ -385,11 +443,11 @@ export default function Notifications() {
                           )}
                         </div>
 
-                        <div style={{ fontSize: 15, color: "#1F2937" }}>
+                        <div style={{ fontSize: 13.5, color: "#1F2937" }}>
                           {n.message || "-"}
                         </div>
 
-                        <div className="text-muted mt-2" style={{ fontSize: 13 }}>
+                        <div className="text-muted mt-1" style={{ fontSize: 12 }}>
                           <i className="bi bi-clock me-1"></i>
                           {formatDate(n.createdAt)}
                         </div>
@@ -400,9 +458,9 @@ export default function Notifications() {
                           <button
                             className="btn btn-sm btn-outline-success"
                             style={{
-                              borderRadius: 10,
+                              borderRadius: 9,
                               fontWeight: 800,
-                              padding: "7px 12px",
+                              padding: "5px 10px",
                               whiteSpace: "nowrap",
                             }}
                             onClick={() => markRead(n.id)}
@@ -415,7 +473,7 @@ export default function Notifications() {
                           <span
                             className="text-muted"
                             style={{
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: 700,
                               whiteSpace: "nowrap",
                             }}
@@ -430,8 +488,10 @@ export default function Notifications() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              New notifications appear first based on the backend response order.
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
+              {isRider
+                ? "Unread delivery notifications appear first. Delivery riders can view only delivery-related notifications."
+                : "Unread notifications appear first, followed by read notifications."}
             </div>
           </div>
         </div>
@@ -442,27 +502,29 @@ export default function Notifications() {
 
 function SummaryCard({ title, value, icon, hint }) {
   return (
-    <div className="col-12 col-sm-6 col-xl-3">
+    <div className="col-6 col-xl-3">
       <div
-        className="p-3 h-100"
+        className="h-100"
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           border: "1px solid rgba(148,163,184,.28)",
-          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           background: "rgba(255,255,255,.88)",
+          padding: "10px 14px",
+          minHeight: 86,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
-            <div style={{ fontSize: 28, fontWeight: 900, color: "#0F172A" }}>
+            <div style={{ fontSize: 23, lineHeight: 1.05, fontWeight: 900, color: "#0F172A" }}>
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -470,13 +532,13 @@ function SummaryCard({ title, value, icon, hint }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
               flex: "0 0 auto",
             }}
           >

@@ -10,9 +10,9 @@ const badgeStyle = (status) => {
   const base = {
     display: "inline-flex",
     alignItems: "center",
-    padding: "6px 10px",
+    padding: "4px 8px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 800,
     border: "1px solid transparent",
     whiteSpace: "nowrap",
@@ -44,10 +44,10 @@ const finalIconStyle = (type) => {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 34,
-    height: 34,
+    width: 28,
+    height: 28,
     borderRadius: "50%",
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: 900,
     border: ok ? "1px solid #A7F3D0" : "1px solid #FECACA",
     background: ok ? "#ECFDF5" : "#FEF2F2",
@@ -81,9 +81,7 @@ export default function Deliveries() {
 
   const deliverableOrders = useMemo(() => {
     const existingDeliveryOrderIds = new Set(
-      deliveries
-        .map((delivery) => delivery.orderId || delivery.order?.id)
-        .filter(Boolean)
+      deliveries.map((delivery) => delivery.orderId || delivery.order?.id).filter(Boolean)
     );
 
     return orders.filter((order) => {
@@ -130,9 +128,7 @@ export default function Deliveries() {
       setRiders(fetchedRiders);
 
       const existingDeliveryOrderIds = new Set(
-        fetchedDeliveries
-          .map((delivery) => delivery.orderId || delivery.order?.id)
-          .filter(Boolean)
+        fetchedDeliveries.map((delivery) => delivery.orderId || delivery.order?.id).filter(Boolean)
       );
 
       const filteredOrders = fetchedOrders.filter((order) => {
@@ -249,7 +245,7 @@ export default function Deliveries() {
       return (
         <button
           className="btn btn-sm btn-outline-primary"
-          style={{ borderRadius: 10, fontWeight: 700 }}
+          style={{ borderRadius: 9, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
           onClick={() => updateStatus(d.id, "PICKED_UP")}
         >
           Picked Up
@@ -261,7 +257,7 @@ export default function Deliveries() {
       return (
         <button
           className="btn btn-sm btn-outline-primary"
-          style={{ borderRadius: 10, fontWeight: 700 }}
+          style={{ borderRadius: 9, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
           onClick={() => updateStatus(d.id, "IN_TRANSIT")}
         >
           In Transit
@@ -273,7 +269,7 @@ export default function Deliveries() {
       return (
         <button
           className="btn btn-sm btn-outline-success"
-          style={{ borderRadius: 10, fontWeight: 700 }}
+          style={{ borderRadius: 9, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
           onClick={() => updateStatus(d.id, "DELIVERED")}
         >
           Delivered
@@ -285,20 +281,20 @@ export default function Deliveries() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   return (
@@ -306,13 +302,13 @@ export default function Deliveries() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Deliveries
-            </h2>
+            </h3>
 
-            <div className="text-muted" style={{ marginTop: 4 }}>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
               Assign riders and track delivery workflow.
             </div>
           </div>
@@ -322,7 +318,7 @@ export default function Deliveries() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             onClick={fetchAll}
@@ -335,47 +331,47 @@ export default function Deliveries() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
         {canCreateDelivery ? (
-          <div className="card mb-4" style={panelStyle}>
-            <div className="card-body" style={headerCardStyle}>
+          <div className="card mb-3" style={panelStyle}>
+            <div className="card-body py-2 px-3" style={headerCardStyle}>
               <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                     Create Delivery
                   </div>
-                  <div className="text-muted" style={{ fontSize: 13 }}>
-                    Select an eligible order, assign a rider, and enter the destination address.
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Select order, assign rider, and enter destination.
                   </div>
                 </div>
 
                 <span
                   className="text-muted"
                   style={{
-                    fontSize: 12,
-                    padding: "6px 10px",
+                    fontSize: 11.5,
+                    padding: "4px 9px",
                     borderRadius: 999,
                     border: "1px solid rgba(148,163,184,.35)",
                     background: "rgba(255,255,255,.85)",
                   }}
                 >
-                  Approved/Packed/Dispatched orders only
+                  Approved / Packed / Dispatched only
                 </span>
               </div>
             </div>
 
-            <div className="card-body">
+            <div className="card-body py-2 px-3">
               <form onSubmit={createDelivery} className="row g-2 align-items-end">
-                <div className="col-12 col-md-4">
+                <div className="col-12 col-lg-4">
                   <label className="form-label small text-muted mb-1">Order</label>
 
                   <select
-                    className="form-select"
-                    style={{ borderRadius: 12 }}
+                    className="form-select form-select-sm"
+                    style={{ borderRadius: 10 }}
                     value={orderId}
                     onChange={(e) => setOrderId(e.target.value)}
                     required
@@ -394,12 +390,12 @@ export default function Deliveries() {
                   </select>
                 </div>
 
-                <div className="col-12 col-md-3">
+                <div className="col-12 col-lg-3">
                   <label className="form-label small text-muted mb-1">Rider</label>
 
                   <select
-                    className="form-select"
-                    style={{ borderRadius: 12 }}
+                    className="form-select form-select-sm"
+                    style={{ borderRadius: 10 }}
                     value={riderId}
                     onChange={(e) => setRiderId(e.target.value)}
                     required
@@ -417,20 +413,16 @@ export default function Deliveries() {
                       ))
                     )}
                   </select>
-
-                  {riders.length === 0 ? (
-                    <div className="form-text">No delivery riders found.</div>
-                  ) : null}
                 </div>
 
-                <div className="col-12 col-md-4">
+                <div className="col-12 col-lg-4">
                   <label className="form-label small text-muted mb-1">
                     Destination <span className="text-danger">*</span>
                   </label>
 
                   <input
-                    className="form-control"
-                    style={{ borderRadius: 12 }}
+                    className="form-control form-control-sm"
+                    style={{ borderRadius: 10 }}
                     placeholder="Enter full destination address"
                     value={destinationAddress}
                     onChange={(e) => setDestinationAddress(e.target.value)}
@@ -438,13 +430,13 @@ export default function Deliveries() {
                   />
                 </div>
 
-                <div className="col-12 col-md-1 d-grid">
+                <div className="col-12 col-lg-1 d-grid">
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm"
                     style={{
-                      borderRadius: 12,
+                      borderRadius: 10,
                       fontWeight: 800,
-                      padding: "10px 12px",
+                      padding: "5px 10px",
                       whiteSpace: "nowrap",
                     }}
                     disabled={
@@ -463,7 +455,7 @@ export default function Deliveries() {
         ) : null}
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Recent Deliveries
@@ -475,20 +467,23 @@ export default function Deliveries() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading...</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-bordered table-hover align-middle">
+                <table
+                  className="table table-bordered table-hover table-sm align-middle mb-0"
+                  style={{ fontSize: 13 }}
+                >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 110 }}>Code</th>
-                      <th style={{ width: 110 }}>Order</th>
-                      <th style={{ minWidth: 170 }}>Rider</th>
-                      <th style={{ width: 140 }}>Status</th>
-                      <th style={{ minWidth: 260 }}>Destination</th>
-                      <th style={{ width: 150, textAlign: "center" }}>Action</th>
+                      <th style={{ width: 95 }}>Code</th>
+                      <th style={{ width: 95 }}>Order</th>
+                      <th style={{ minWidth: 150 }}>Rider</th>
+                      <th style={{ width: 120 }}>Status</th>
+                      <th style={{ minWidth: 230 }}>Destination</th>
+                      <th style={{ width: 130, textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
 
@@ -521,7 +516,7 @@ export default function Deliveries() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
               {isBranchManager
                 ? "Branch Manager can assign riders to deliveries for accessible orders."
                 : isRider

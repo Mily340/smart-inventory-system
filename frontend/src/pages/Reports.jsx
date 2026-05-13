@@ -34,9 +34,9 @@ const statusBadgeStyle = (status) => {
   const base = {
     display: "inline-flex",
     alignItems: "center",
-    padding: "6px 10px",
+    padding: "4px 8px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 800,
     border: "1px solid transparent",
     whiteSpace: "nowrap",
@@ -407,24 +407,24 @@ export default function Reports() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   const inputStyle = {
-    borderRadius: 12,
+    borderRadius: 10,
   };
 
   const branchLabel = selectedBranch
@@ -482,20 +482,20 @@ export default function Reports() {
       <NavBar />
 
       <div className="container-fluid px-4 print-area" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3 no-print">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 no-print">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Reports
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
-              Generate detailed operational reports and print or save them as PDF.
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
+              Generate operational reports and print or save them as PDF.
             </div>
           </div>
 
           <div className="d-flex flex-wrap gap-2">
             <button
               className="btn btn-outline-secondary btn-sm"
-              style={{ borderRadius: 10, fontWeight: 700, padding: "8px 14px" }}
+              style={{ borderRadius: 10, fontWeight: 700, padding: "6px 12px" }}
               onClick={runReport}
               disabled={loading || branchLoading}
             >
@@ -505,7 +505,7 @@ export default function Reports() {
 
             <button
               className="btn btn-primary btn-sm"
-              style={{ borderRadius: 10, fontWeight: 800, padding: "8px 14px" }}
+              style={{ borderRadius: 10, fontWeight: 800, padding: "6px 12px" }}
               onClick={printReport}
               disabled={!hasRun}
             >
@@ -516,19 +516,19 @@ export default function Reports() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger no-print" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2 no-print" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="card mb-4 no-print" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mb-3 no-print" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Report Controls
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
+                <div className="text-muted" style={{ fontSize: 12 }}>
                   Select report type, branch, date range, and status filter.
                 </div>
               </div>
@@ -536,8 +536,8 @@ export default function Reports() {
               <span
                 className="text-muted"
                 style={{
-                  fontSize: 12,
-                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -548,14 +548,14 @@ export default function Reports() {
             </div>
           </div>
 
-          <div className="card-body">
-            <div className="d-flex gap-2 flex-wrap mb-3">
+          <div className="card-body py-2 px-3">
+            <div className="d-flex gap-2 flex-wrap mb-2">
               {reportTabs.map((t) => (
                 <button
                   key={t.key}
                   type="button"
                   className={`btn btn-sm ${tab === t.key ? "btn-primary" : "btn-outline-primary"}`}
-                  style={{ borderRadius: 999, fontWeight: 800, padding: "8px 13px" }}
+                  style={{ borderRadius: 999, fontWeight: 800, padding: "5px 11px" }}
                   onClick={() => setTab(t.key)}
                 >
                   {t.label}
@@ -613,7 +613,7 @@ export default function Reports() {
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
-                    style={{ borderRadius: "0 12px 12px 0" }}
+                    style={{ borderRadius: "0 10px 10px 0" }}
                     onClick={() => openDatePicker(fromInputRef)}
                     disabled={!dateFilterEnabled}
                     title="Open calendar"
@@ -638,7 +638,7 @@ export default function Reports() {
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
-                    style={{ borderRadius: "0 12px 12px 0" }}
+                    style={{ borderRadius: "0 10px 10px 0" }}
                     onClick={() => openDatePicker(toInputRef)}
                     disabled={!dateFilterEnabled}
                     title="Open calendar"
@@ -657,9 +657,7 @@ export default function Reports() {
                   onChange={(e) => setStatus(e.target.value)}
                   disabled={!statusFilterEnabled}
                 >
-                  <option value="">
-                    {statusFilterEnabled ? "All Status" : "No status filter"}
-                  </option>
+                  <option value="">{statusFilterEnabled ? "All Status" : "No status filter"}</option>
                   {statusOptions.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -671,7 +669,7 @@ export default function Reports() {
               <div className="col-12 col-xl-3 d-grid">
                 <button
                   className="btn btn-success btn-sm"
-                  style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                  style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
                   onClick={runReport}
                   disabled={loading || branchLoading}
                 >
@@ -681,9 +679,9 @@ export default function Reports() {
               </div>
             </div>
 
-            <div className="text-muted mt-2" style={{ fontSize: 12 }}>
-              Date filter is disabled for Low Stock because it shows the current stock level.
-              Status filter is available only for Orders and Transfers reports.
+            <div className="text-muted mt-1" style={{ fontSize: 11.5 }}>
+              Date filter is disabled for Low Stock. Status filter is available only for Orders and
+              Transfers reports.
             </div>
           </div>
         </div>
@@ -693,17 +691,17 @@ export default function Reports() {
             <div
               style={{
                 textAlign: "center",
-                padding: "16px 20px 12px",
-                borderBottom: "1px solid rgba(148,163,184,.35)",
+                padding: "10px 16px 8px",
+                borderBottom: "1px solid rgba(148,163,184,.32)",
                 background: "#FFFFFF",
               }}
             >
               <h1
                 style={{
                   margin: 0,
-                  fontSize: 22,
-                  fontWeight: 800,
-                  letterSpacing: 0.8,
+                  fontSize: 18,
+                  fontWeight: 900,
+                  letterSpacing: 0.7,
                   color: "#0F172A",
                   textTransform: "uppercase",
                 }}
@@ -714,31 +712,31 @@ export default function Reports() {
 
             <div
               style={{
-                padding: "16px 20px",
-                borderBottom: "1px solid rgba(148,163,184,.35)",
+                padding: "10px 16px",
+                borderBottom: "1px solid rgba(148,163,184,.32)",
                 background:
-                  "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+                  "linear-gradient(180deg, rgba(219,234,254,.38), rgba(255,255,255,1))",
               }}
             >
-              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
                 <div>
                   <h2
                     className="m-0"
                     style={{
                       fontWeight: 900,
                       color: "#0F172A",
-                      fontSize: 26,
+                      fontSize: 21,
                     }}
                   >
                     {reportTitle}
                   </h2>
 
-                  <div className="text-muted" style={{ fontSize: 14, marginTop: 6 }}>
+                  <div className="text-muted" style={{ fontSize: 12.5, marginTop: 3 }}>
                     <strong>Generated:</strong> {generatedAt}
                   </div>
                 </div>
 
-                <div className="text-end" style={{ fontSize: 14, lineHeight: 1.7 }}>
+                <div className="text-end" style={{ fontSize: 12.5, lineHeight: 1.45 }}>
                   <div>
                     <strong>Branch:</strong> {branchLabel}
                   </div>
@@ -753,12 +751,12 @@ export default function Reports() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {!hasRun ? (
               <div
-                className="text-center text-muted py-5"
+                className="text-center text-muted py-4"
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 14,
                   border: "1px dashed rgba(148,163,184,.5)",
                   background: "rgba(248,250,252,.7)",
                 }}
@@ -767,7 +765,7 @@ export default function Reports() {
               </div>
             ) : (
               <>
-                <div className="row g-3 mb-4">
+                <div className="row g-2 mb-3">
                   {summary.map((s) => (
                     <SummaryCard
                       key={s.title}
@@ -780,10 +778,10 @@ export default function Reports() {
                 </div>
 
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                  <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 900, color: "#0F172A" }}>
                     Detailed Records
                   </div>
-                  <div className="text-muted" style={{ fontSize: 13 }}>
+                  <div className="text-muted" style={{ fontSize: 12.5 }}>
                     {loading ? "Loading..." : `${tableRows.length} record(s)`}
                   </div>
                 </div>
@@ -792,7 +790,10 @@ export default function Reports() {
                   <div className="text-muted">Loading report...</div>
                 ) : (
                   <div className="table-responsive">
-                    <table className="table table-sm table-bordered table-hover align-middle mb-0">
+                    <table
+                      className="table table-sm table-bordered table-hover align-middle mb-0"
+                      style={{ fontSize: 12.5 }}
+                    >
                       <thead className="table-light">
                         <tr>
                           {tableHeaders.map((h) => (
@@ -828,7 +829,7 @@ export default function Reports() {
                           <tr>
                             <td
                               colSpan={tableHeaders.length}
-                              className="text-center text-muted py-4"
+                              className="text-center text-muted py-3"
                             >
                               No records found for the selected filters.
                             </td>
@@ -851,23 +852,26 @@ function SummaryCard({ title, value, icon, hint }) {
   return (
     <div className="col-12 col-sm-6 col-xl-4">
       <div
-        className="p-3 h-100"
+        className="h-100"
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           border: "1px solid rgba(148,163,184,.28)",
-          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           background: "rgba(255,255,255,.88)",
+          padding: "10px 14px",
+          minHeight: 82,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
             <div
               style={{
-                fontSize: typeof value === "string" ? 22 : 28,
+                fontSize: typeof value === "string" ? 19 : 23,
+                lineHeight: 1.05,
                 fontWeight: 900,
                 color: "#0F172A",
               }}
@@ -875,7 +879,7 @@ function SummaryCard({ title, value, icon, hint }) {
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -883,13 +887,13 @@ function SummaryCard({ title, value, icon, hint }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
               flex: "0 0 auto",
             }}
           >

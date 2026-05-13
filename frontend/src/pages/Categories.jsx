@@ -5,11 +5,11 @@ import client from "../api/client";
 import NavBar from "../components/NavBar";
 
 const smallActionBtnStyle = {
-  borderRadius: 9,
+  borderRadius: 8,
   fontWeight: 700,
-  padding: "5px 10px",
-  fontSize: 13,
-  lineHeight: 1.25,
+  padding: "4px 8px",
+  fontSize: 12,
+  lineHeight: 1.2,
   whiteSpace: "nowrap",
 };
 
@@ -45,10 +45,10 @@ export default function Categories() {
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("branchId");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("role");
+      sessionStorage.removeItem("fullName");
+      sessionStorage.removeItem("branchId");
       navigate("/login");
       return true;
     }
@@ -132,24 +132,24 @@ export default function Categories() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   const inputStyle = {
-    borderRadius: 12,
+    borderRadius: 10,
   };
 
   return (
@@ -157,12 +157,12 @@ export default function Categories() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Categories
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
               Manage product categories used for organizing inventory items.
             </div>
           </div>
@@ -172,7 +172,7 @@ export default function Categories() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             onClick={fetchCategories}
@@ -185,34 +185,34 @@ export default function Categories() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="row g-3 mb-4">
+        <div className="row g-2 mb-3">
           <SummaryCard
             title="Total Categories"
             value={summary.total}
             icon="bi-tags"
-            hint="Product classification groups"
+            hint="Product groups"
           />
           <SummaryCard
             title="Latest Category"
             value={summary.latest}
             icon="bi-clock-history"
-            hint="Most recently created"
+            hint="Recently created"
           />
         </div>
 
-        <div className="card mb-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Create Category
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
+                <div className="text-muted" style={{ fontSize: 12 }}>
                   Add a category to group related products.
                 </div>
               </div>
@@ -220,8 +220,8 @@ export default function Categories() {
               <span
                 className="text-muted"
                 style={{
-                  fontSize: 12,
-                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -232,12 +232,12 @@ export default function Categories() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             <form onSubmit={createCategory} className="row g-2 align-items-end">
               <div className="col-12 col-lg-9">
                 <label className="form-label small text-muted mb-1">Category Name</label>
                 <input
-                  className="form-control"
+                  className="form-control form-control-sm"
                   style={inputStyle}
                   placeholder="Category name"
                   value={name}
@@ -248,11 +248,11 @@ export default function Categories() {
 
               <div className="col-12 col-lg-3 d-grid">
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   style={{
-                    borderRadius: 12,
+                    borderRadius: 10,
                     fontWeight: 800,
-                    padding: "10px 12px",
+                    minHeight: 31,
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -265,7 +265,7 @@ export default function Categories() {
         </div>
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Category List
@@ -277,18 +277,21 @@ export default function Categories() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading categories...</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-bordered table-hover align-middle mb-0">
+                <table
+                  className="table table-sm table-bordered table-hover align-middle mb-0"
+                  style={{ fontSize: 13 }}
+                >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 120 }}>Code</th>
-                      <th style={{ minWidth: 240 }}>Name</th>
-                      <th style={{ minWidth: 220 }}>Created</th>
-                      <th style={{ width: 130, textAlign: "center" }}>Actions</th>
+                      <th style={{ width: 110 }}>Code</th>
+                      <th style={{ minWidth: 220 }}>Name</th>
+                      <th style={{ minWidth: 200 }}>Created</th>
+                      <th style={{ width: 115, textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -313,7 +316,7 @@ export default function Categories() {
 
                     {categories.length === 0 ? (
                       <tr>
-                        <td colSpan="4" className="text-center text-muted py-4">
+                        <td colSpan="4" className="text-center text-muted py-3">
                           No categories found
                         </td>
                       </tr>
@@ -323,7 +326,7 @@ export default function Categories() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
               Category codes are generated automatically and remain unchanged after editing.
             </div>
           </div>
@@ -337,7 +340,7 @@ export default function Categories() {
               <div
                 className="modal-content"
                 style={{
-                  borderRadius: 18,
+                  borderRadius: 16,
                   border: "1px solid rgba(148,163,184,.35)",
                   boxShadow: "0 18px 45px rgba(15,23,42,.16)",
                   overflow: "hidden",
@@ -345,17 +348,20 @@ export default function Categories() {
               >
                 <form onSubmit={saveEdit}>
                   <div
-                    className="modal-header"
+                    className="modal-header py-2 px-3"
                     style={{
                       background:
                         "linear-gradient(180deg, rgba(219,234,254,.65), rgba(255,255,255,1))",
                     }}
                   >
                     <div>
-                      <h5 className="modal-title" style={{ fontWeight: 900 }}>
+                      <h5
+                        className="modal-title"
+                        style={{ fontWeight: 900, fontSize: 17 }}
+                      >
                         Edit Category
                       </h5>
-                      <div className="text-muted" style={{ fontSize: 13 }}>
+                      <div className="text-muted" style={{ fontSize: 12 }}>
                         Update the category name. Code will remain unchanged.
                       </div>
                     </div>
@@ -363,10 +369,10 @@ export default function Categories() {
                     <button type="button" className="btn-close" onClick={closeEdit} />
                   </div>
 
-                  <div className="modal-body">
+                  <div className="modal-body py-3 px-3">
                     <label className="form-label small text-muted mb-1">Category Name</label>
                     <input
-                      className="form-control"
+                      className="form-control form-control-sm"
                       style={inputStyle}
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
@@ -374,16 +380,16 @@ export default function Categories() {
                       autoFocus
                     />
 
-                    <div className="form-text">
+                    <div className="form-text" style={{ fontSize: 12 }}>
                       Save button is enabled only after changing the category name.
                     </div>
                   </div>
 
-                  <div className="modal-footer">
+                  <div className="modal-footer py-2 px-3">
                     <button
                       type="button"
-                      className="btn btn-outline-secondary"
-                      style={{ borderRadius: 10, fontWeight: 700 }}
+                      className="btn btn-outline-secondary btn-sm"
+                      style={{ borderRadius: 9, fontWeight: 700 }}
                       onClick={closeEdit}
                       disabled={savingEdit}
                     >
@@ -391,8 +397,8 @@ export default function Categories() {
                     </button>
 
                     <button
-                      className="btn btn-primary"
-                      style={{ borderRadius: 10, fontWeight: 800 }}
+                      className="btn btn-primary btn-sm"
+                      style={{ borderRadius: 9, fontWeight: 800 }}
                       disabled={!canSaveEdit}
                     >
                       {savingEdit ? "Saving..." : "Save Changes"}
@@ -414,31 +420,39 @@ function SummaryCard({ title, value, icon, hint }) {
   return (
     <div className="col-12 col-md-6">
       <div
-        className="p-3 h-100"
+        className="h-100"
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           border: "1px solid rgba(148,163,184,.28)",
-          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           background: "rgba(255,255,255,.88)",
+          padding: "10px 14px",
+          minHeight: 82,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
             <div
               style={{
-                fontSize: typeof value === "number" ? 28 : 22,
+                fontSize: typeof value === "number" ? 23 : 18,
+                lineHeight: 1.08,
                 fontWeight: 900,
                 color: "#0F172A",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: 360,
               }}
+              title={String(value)}
             >
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -446,13 +460,13 @@ function SummaryCard({ title, value, icon, hint }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
               flex: "0 0 auto",
             }}
           >

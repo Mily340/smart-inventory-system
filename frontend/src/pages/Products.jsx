@@ -7,11 +7,11 @@ import NavBar from "../components/NavBar";
 const FALLBACK_IMG = "https://via.placeholder.com/400x260?text=Product";
 
 const smallActionBtnStyle = {
-  borderRadius: 9,
+  borderRadius: 8,
   fontWeight: 700,
-  padding: "5px 10px",
-  fontSize: 13,
-  lineHeight: 1.25,
+  padding: "4px 8px",
+  fontSize: 12,
+  lineHeight: 1.2,
   whiteSpace: "nowrap",
 };
 
@@ -177,24 +177,24 @@ export default function Products() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   const inputStyle = {
-    borderRadius: 12,
+    borderRadius: 10,
   };
 
   return (
@@ -202,12 +202,12 @@ export default function Products() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Products
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
               Manage product details, categories, prices, and catalog images.
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function Products() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             onClick={fetchAll}
@@ -230,49 +230,49 @@ export default function Products() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="row g-3 mb-4">
+        <div className="row g-2 mb-3">
           <SummaryCard
             title="Total Products"
             value={summary.total}
             icon="bi-box-seam"
-            hint="Registered catalog items"
+            hint="Catalog items"
           />
           <SummaryCard
             title="Categories"
             value={summary.categories}
             icon="bi-tags"
-            hint="Available product groups"
+            hint="Product groups"
           />
           <SummaryCard
             title="Latest Product"
             value={summary.latest}
             icon="bi-clock-history"
-            hint="Most recently added"
+            hint="Recently added"
           />
         </div>
 
-        <div className="card mb-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Create Product
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  Add a product with SKU, unit, price, category, and optional image.
+                <div className="text-muted" style={{ fontSize: 12 }}>
+                  Add product details, price, category, and optional image.
                 </div>
               </div>
 
               <span
                 className="text-muted"
                 style={{
-                  fontSize: 12,
-                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -283,7 +283,7 @@ export default function Products() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             <form onSubmit={createProduct} className="row g-2 align-items-end">
               <div className="col-12 col-md-2">
                 <label className="form-label small text-muted mb-1">SKU</label>
@@ -358,9 +358,9 @@ export default function Products() {
                 <button
                   className="btn btn-primary btn-sm"
                   style={{
-                    borderRadius: 12,
+                    borderRadius: 10,
                     fontWeight: 800,
-                    minHeight: 34,
+                    minHeight: 31,
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -394,7 +394,7 @@ export default function Products() {
         </div>
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Product List
@@ -406,7 +406,7 @@ export default function Products() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading products...</div>
             ) : (
@@ -417,15 +417,15 @@ export default function Products() {
                 >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 76 }}>Image</th>
-                      <th style={{ width: 80 }}>Code</th>
-                      <th style={{ width: 120 }}>SKU</th>
-                      <th style={{ minWidth: 170 }}>Name</th>
-                      <th style={{ width: 160 }}>Category</th>
-                      <th style={{ width: 90 }}>Unit</th>
-                      <th style={{ width: 90 }}>Price</th>
-                      <th style={{ minWidth: 180 }}>Description</th>
-                      <th style={{ width: 105, textAlign: "center" }}>Actions</th>
+                      <th style={{ width: 66 }}>Image</th>
+                      <th style={{ width: 76 }}>Code</th>
+                      <th style={{ width: 110 }}>SKU</th>
+                      <th style={{ minWidth: 165 }}>Name</th>
+                      <th style={{ width: 150 }}>Category</th>
+                      <th style={{ width: 75 }}>Unit</th>
+                      <th style={{ width: 80 }}>Price</th>
+                      <th style={{ minWidth: 170 }}>Description</th>
+                      <th style={{ width: 95, textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -439,10 +439,10 @@ export default function Products() {
                             loading="lazy"
                             decoding="async"
                             style={{
-                              width: 58,
-                              height: 42,
+                              width: 50,
+                              height: 36,
                               objectFit: "cover",
-                              borderRadius: 10,
+                              borderRadius: 8,
                               border: "1px solid #eee",
                               background: "#f2f2f2",
                             }}
@@ -485,7 +485,7 @@ export default function Products() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
               Product codes are generated automatically. SKU, name, unit, price, category, image,
               and description can be updated from Edit.
             </div>
@@ -494,233 +494,229 @@ export default function Products() {
       </div>
 
       {editOpen ? (
-        <>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2050,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "18px",
+            background: "rgba(15, 23, 42, 0.42)",
+          }}
+        >
           <div
             style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 2050,
+              width: "min(760px, 96vw)",
+              maxHeight: "88vh",
+              borderRadius: 16,
+              background: "#fff",
+              border: "1px solid rgba(148,163,184,.35)",
+              boxShadow: "0 18px 45px rgba(15,23,42,.22)",
+              overflow: "hidden",
               display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "18px",
-              background: "rgba(15, 23, 42, 0.42)",
+              flexDirection: "column",
             }}
           >
-            <div
+            <form
+              onSubmit={saveEdit}
               style={{
-                width: "min(760px, 96vw)",
-                maxHeight: "88vh",
-                borderRadius: 18,
-                background: "#fff",
-                border: "1px solid rgba(148,163,184,.35)",
-                boxShadow: "0 18px 45px rgba(15,23,42,.22)",
-                overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
+                minHeight: 0,
               }}
             >
-              <form
-                onSubmit={saveEdit}
+              <div
                 style={{
+                  padding: "10px 14px",
+                  background:
+                    "linear-gradient(180deg, rgba(219,234,254,.65), rgba(255,255,255,1))",
+                  borderBottom: "1px solid rgba(148,163,184,.25)",
                   display: "flex",
-                  flexDirection: "column",
-                  minHeight: 0,
+                  justifyContent: "space-between",
+                  gap: 12,
+                  alignItems: "flex-start",
+                  flexShrink: 0,
                 }}
               >
-                <div
-                  style={{
-                    padding: "14px 18px",
-                    background:
-                      "linear-gradient(180deg, rgba(219,234,254,.75), rgba(255,255,255,1))",
-                    borderBottom: "1px solid rgba(148,163,184,.25)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    alignItems: "flex-start",
-                    flexShrink: 0,
-                  }}
-                >
-                  <div>
-                    <h5
-                      className="m-0"
-                      style={{
-                        fontWeight: 900,
-                        color: "#0F172A",
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                      }}
+                <div>
+                  <h5
+                    className="m-0"
+                    style={{
+                      fontWeight: 900,
+                      color: "#0F172A",
+                      fontSize: 17,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Edit Product
+                  </h5>
+                  <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>
+                    Update product details and catalog image.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={closeEdit}
+                  style={{ flex: "0 0 auto", marginTop: 2 }}
+                  aria-label="Close"
+                />
+              </div>
+
+              <div
+                style={{
+                  padding: 14,
+                  overflowY: "auto",
+                  maxHeight: "calc(88vh - 108px)",
+                }}
+              >
+                <div className="row g-2">
+                  <div className="col-12 col-md-3">
+                    <label className="form-label small text-muted mb-1">SKU</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      value={editSku}
+                      onChange={(e) => setEditSku(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-12 col-md-3">
+                    <label className="form-label small text-muted mb-1">Name</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-6 col-md-3">
+                    <label className="form-label small text-muted mb-1">Unit</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      value={editUnit}
+                      onChange={(e) => setEditUnit(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-6 col-md-3">
+                    <label className="form-label small text-muted mb-1">Price</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-12 col-md-4">
+                    <label className="form-label small text-muted mb-1">Category</label>
+                    <select
+                      className="form-select form-select-sm"
+                      style={inputStyle}
+                      value={editCategoryId}
+                      onChange={(e) => setEditCategoryId(e.target.value)}
+                      required
                     >
-                      Edit Product
-                    </h5>
-                    <div className="text-muted" style={{ fontSize: 13, marginTop: 3 }}>
-                      Update product details and catalog image.
-                    </div>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.code ? `${c.code} - ` : ""}
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={closeEdit}
-                    style={{ flex: "0 0 auto", marginTop: 2 }}
-                    aria-label="Close"
-                  />
-                </div>
+                  <div className="col-12 col-md-8">
+                    <label className="form-label small text-muted mb-1">Description</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="Optional"
+                    />
+                  </div>
 
-                <div
-                  style={{
-                    padding: 18,
-                    overflowY: "auto",
-                    maxHeight: "calc(88vh - 126px)",
-                  }}
-                >
-                  <div className="row g-2">
-                    <div className="col-12 col-md-3">
-                      <label className="form-label small text-muted mb-1">SKU</label>
-                      <input
-                        className="form-control form-control-sm"
-                        style={inputStyle}
-                        value={editSku}
-                        onChange={(e) => setEditSku(e.target.value)}
-                        required
+                  <div className="col-12">
+                    <label className="form-label small text-muted mb-1">Image URL optional</label>
+                    <input
+                      className="form-control form-control-sm"
+                      style={inputStyle}
+                      value={editImageUrl}
+                      onChange={(e) => setEditImageUrl(e.target.value)}
+                      placeholder="https://..."
+                    />
+
+                    <div className="mt-2">
+                      <img
+                        src={editImageUrl?.trim() ? editImageUrl.trim() : FALLBACK_IMG}
+                        alt="Preview"
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width: "100%",
+                          maxHeight: 120,
+                          objectFit: "cover",
+                          borderRadius: 12,
+                          border: "1px solid #e5e7eb",
+                          background: "#f2f2f2",
+                        }}
+                        onError={(e) => {
+                          if (e.currentTarget.src !== FALLBACK_IMG) {
+                            e.currentTarget.src = FALLBACK_IMG;
+                          }
+                        }}
                       />
-                    </div>
-
-                    <div className="col-12 col-md-3">
-                      <label className="form-label small text-muted mb-1">Name</label>
-                      <input
-                        className="form-control form-control-sm"
-                        style={inputStyle}
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="col-6 col-md-3">
-                      <label className="form-label small text-muted mb-1">Unit</label>
-                      <input
-                        className="form-control form-control-sm"
-                        style={inputStyle}
-                        value={editUnit}
-                        onChange={(e) => setEditUnit(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="col-6 col-md-3">
-                      <label className="form-label small text-muted mb-1">Price</label>
-                      <input
-                        className="form-control form-control-sm"
-                        style={inputStyle}
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={editPrice}
-                        onChange={(e) => setEditPrice(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="col-12 col-md-4">
-                      <label className="form-label small text-muted mb-1">Category</label>
-                      <select
-                        className="form-select form-select-sm"
-                        style={inputStyle}
-                        value={editCategoryId}
-                        onChange={(e) => setEditCategoryId(e.target.value)}
-                        required
-                      >
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.code ? `${c.code} - ` : ""}
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-12 col-md-8">
-                      <label className="form-label small text-muted mb-1">Description</label>
-                      <input
-                        className="form-control form-control-sm"
-                        style={inputStyle}
-                        value={editDescription}
-                        onChange={(e) => setEditDescription(e.target.value)}
-                        placeholder="Optional"
-                      />
-                    </div>
-
-                    <div className="col-12">
-                      <label className="form-label small text-muted mb-1">
-                        Image URL optional
-                      </label>
-                      <input
-                        className="form-control form-control-sm"
-                        style={inputStyle}
-                        value={editImageUrl}
-                        onChange={(e) => setEditImageUrl(e.target.value)}
-                        placeholder="https://..."
-                      />
-
-                      <div className="mt-2">
-                        <img
-                          src={editImageUrl?.trim() ? editImageUrl.trim() : FALLBACK_IMG}
-                          alt="Preview"
-                          loading="lazy"
-                          decoding="async"
-                          style={{
-                            width: "100%",
-                            maxHeight: 150,
-                            objectFit: "cover",
-                            borderRadius: 14,
-                            border: "1px solid #e5e7eb",
-                            background: "#f2f2f2",
-                          }}
-                          onError={(e) => {
-                            if (e.currentTarget.src !== FALLBACK_IMG) {
-                              e.currentTarget.src = FALLBACK_IMG;
-                            }
-                          }}
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div
-                  style={{
-                    padding: "10px 18px",
-                    borderTop: "1px solid rgba(148,163,184,.25)",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 10,
-                    background: "#fff",
-                    flexShrink: 0,
-                  }}
+              <div
+                style={{
+                  padding: "8px 14px",
+                  borderTop: "1px solid rgba(148,163,184,.25)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                  background: "#fff",
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  style={{ borderRadius: 9, fontWeight: 700 }}
+                  onClick={closeEdit}
+                  disabled={savingEdit}
                 >
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    style={{ borderRadius: 10, fontWeight: 700 }}
-                    onClick={closeEdit}
-                    disabled={savingEdit}
-                  >
-                    Cancel
-                  </button>
+                  Cancel
+                </button>
 
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{ borderRadius: 10, fontWeight: 800 }}
-                    disabled={savingEdit}
-                  >
-                    {savingEdit ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
-            </div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  style={{ borderRadius: 9, fontWeight: 800 }}
+                  disabled={savingEdit}
+                >
+                  {savingEdit ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
           </div>
-        </>
+        </div>
       ) : null}
     </>
   );
@@ -730,31 +726,39 @@ function SummaryCard({ title, value, icon, hint }) {
   return (
     <div className="col-12 col-sm-6 col-xl-4">
       <div
-        className="p-3 h-100"
+        className="h-100"
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           border: "1px solid rgba(148,163,184,.28)",
-          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           background: "rgba(255,255,255,.88)",
+          padding: "10px 14px",
+          minHeight: 82,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
             <div
               style={{
-                fontSize: typeof value === "number" ? 28 : 22,
+                fontSize: typeof value === "number" ? 23 : 18,
+                lineHeight: 1.08,
                 fontWeight: 900,
                 color: "#0F172A",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: 260,
               }}
+              title={String(value)}
             >
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -762,13 +766,13 @@ function SummaryCard({ title, value, icon, hint }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
               flex: "0 0 auto",
             }}
           >

@@ -8,10 +8,10 @@ const statusBadgeStyle = (status) => {
   const base = {
     display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    padding: "6px 10px",
+    gap: 5,
+    padding: "4px 8px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 800,
     border: "1px solid transparent",
     whiteSpace: "nowrap",
@@ -391,24 +391,24 @@ export default function Inventory() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   const inputStyle = {
-    borderRadius: 12,
+    borderRadius: 10,
   };
 
   const branchLabel = selectedBranch
@@ -420,12 +420,12 @@ export default function Inventory() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Inventory
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
               {isBranchScoped
                 ? "Manage stock operations for your assigned active branch."
                 : "Manage stock operations, reorder levels, and active branch inventory."}
@@ -458,7 +458,7 @@ export default function Inventory() {
               style={{
                 borderRadius: 10,
                 fontWeight: 700,
-                padding: "8px 14px",
+                padding: "6px 12px",
                 background: "rgba(255,255,255,.85)",
               }}
               onClick={() => fetchAll(branchId)}
@@ -471,25 +471,25 @@ export default function Inventory() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
         {selectedBranch && selectedBranch.isActive === false ? (
-          <div className="alert alert-warning" style={{ borderRadius: 14 }}>
+          <div className="alert alert-warning py-2 mb-2" style={{ borderRadius: 12 }}>
             This branch is inactive. Stock-in, stock-out, and reorder-level updates are disabled.
           </div>
         ) : null}
 
         <div className="card mb-3" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Select Branch & Product
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
+                <div className="text-muted" style={{ fontSize: 12 }}>
                   Choose an active branch and product before applying stock actions.
                 </div>
               </div>
@@ -497,8 +497,8 @@ export default function Inventory() {
               <span
                 className="text-muted"
                 style={{
-                  fontSize: 12,
-                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -509,7 +509,7 @@ export default function Inventory() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             <div className="row g-2 align-items-end">
               <div className="col-12 col-lg-6">
                 <label className="form-label small text-muted mb-1">Branch</label>
@@ -565,56 +565,56 @@ export default function Inventory() {
           </div>
         </div>
 
-        <div className="row g-3 mb-3">
+        <div className="row g-2 mb-3">
           <SummaryCard
             title="Total Items"
             value={stats.totalItems}
             icon="bi-box-seam"
-            hint="Products listed in this branch"
+            hint="Products listed"
           />
           <SummaryCard
             title="Low Stock"
             value={stats.lowCount}
             icon="bi-exclamation-triangle"
-            hint="Qty at or below reorder level"
+            hint="At/below reorder"
           />
           <SummaryCard
             title="Out of Stock"
             value={stats.outCount}
             icon="bi-x-circle"
-            hint="Products with zero quantity"
+            hint="Zero quantity"
           />
           <SummaryCard
             title="Total Quantity"
             value={stats.totalQty}
             icon="bi-bar-chart"
-            hint="Sum of all stock quantities"
+            hint="Total stock"
           />
         </div>
 
         <div className="row g-3 mb-3">
           <div className="col-12 col-xl-4">
             <div className="card h-100" style={panelStyle}>
-              <div className="card-body" style={headerCardStyle}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+              <div className="card-body py-2 px-3" style={headerCardStyle}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Selected Product
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
+                <div className="text-muted" style={{ fontSize: 12 }}>
                   Current stock condition.
                 </div>
               </div>
 
-              <div className="card-body">
+              <div className="card-body py-2 px-3">
                 <div className="mb-2">
                   <div className="text-muted small">Product</div>
-                  <div style={{ fontWeight: 900, color: "#0F172A" }}>
+                  <div style={{ fontWeight: 900, color: "#0F172A", fontSize: 14 }}>
                     {selectedProduct
                       ? `${selectedProduct.code ? `${selectedProduct.code} - ` : ""}${selectedProduct.name}`
                       : "-"}
                   </div>
                 </div>
 
-                <div className="row g-2 mb-3">
+                <div className="row g-2 mb-2">
                   <MiniStat title="Quantity" value={selectedQty} />
                   <MiniStat title="Reorder" value={selectedReorder} />
                 </div>
@@ -629,13 +629,13 @@ export default function Inventory() {
 
           <div className="col-12 col-xl-8">
             <div className="card h-100" style={panelStyle}>
-              <div className="card-body" style={headerCardStyle}>
+              <div className="card-body py-2 px-3" style={headerCardStyle}>
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                       Stock Actions
                     </div>
-                    <div className="text-muted" style={{ fontSize: 13 }}>
+                    <div className="text-muted" style={{ fontSize: 12 }}>
                       Apply stock-in, stock-out, or reorder-level updates.
                     </div>
                   </div>
@@ -643,8 +643,8 @@ export default function Inventory() {
                   <span
                     className="text-muted"
                     style={{
-                      fontSize: 12,
-                      padding: "6px 10px",
+                      fontSize: 11.5,
+                      padding: "4px 9px",
                       borderRadius: 999,
                       border: "1px solid rgba(148,163,184,.35)",
                       background: "rgba(255,255,255,.85)",
@@ -655,7 +655,7 @@ export default function Inventory() {
                 </div>
               </div>
 
-              <div className="card-body">
+              <div className="card-body py-2 px-3">
                 <div className="row g-2 align-items-end">
                   <div className="col-12 col-lg-4">
                     <label className="form-label small text-muted mb-1">Quantity</label>
@@ -674,7 +674,7 @@ export default function Inventory() {
                     <form onSubmit={stockIn}>
                       <button
                         className="btn btn-success btn-sm w-100"
-                        style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                        style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
                         type="submit"
                         disabled={!canDoQty}
                       >
@@ -688,7 +688,7 @@ export default function Inventory() {
                     <form onSubmit={stockOut}>
                       <button
                         className="btn btn-danger btn-sm w-100"
-                        style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                        style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
                         type="submit"
                         disabled={!canDoQty}
                       >
@@ -699,7 +699,7 @@ export default function Inventory() {
                   </div>
                 </div>
 
-                <hr className="my-3" />
+                <hr className="my-2" />
 
                 <form className="row g-2 align-items-end" onSubmit={updateReorder}>
                   <div className="col-12 col-lg-8">
@@ -718,7 +718,7 @@ export default function Inventory() {
                   <div className="col-12 col-lg-4">
                     <button
                       className="btn btn-primary btn-sm w-100"
-                      style={{ borderRadius: 12, fontWeight: 800, minHeight: 34 }}
+                      style={{ borderRadius: 10, fontWeight: 800, minHeight: 31 }}
                       type="submit"
                       disabled={!canDoReorder}
                     >
@@ -732,7 +732,7 @@ export default function Inventory() {
         </div>
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Inventory List
@@ -744,21 +744,24 @@ export default function Inventory() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading inventory...</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-sm table-bordered table-hover align-middle mb-0">
+                <table
+                  className="table table-sm table-bordered table-hover align-middle mb-0"
+                  style={{ fontSize: 13 }}
+                >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 130 }}>Code</th>
-                      <th style={{ minWidth: 220 }}>Product</th>
-                      <th style={{ minWidth: 150 }}>Category</th>
-                      <th style={{ width: 100 }}>Unit</th>
-                      <th style={{ width: 100 }}>Qty</th>
-                      <th style={{ width: 120 }}>Reorder</th>
-                      <th style={{ width: 150, textAlign: "center" }}>Status</th>
+                      <th style={{ width: 110 }}>Code</th>
+                      <th style={{ minWidth: 210 }}>Product</th>
+                      <th style={{ minWidth: 140 }}>Category</th>
+                      <th style={{ width: 85 }}>Unit</th>
+                      <th style={{ width: 90 }}>Qty</th>
+                      <th style={{ width: 110 }}>Reorder</th>
+                      <th style={{ width: 135, textAlign: "center" }}>Status</th>
                     </tr>
                   </thead>
 
@@ -788,7 +791,7 @@ export default function Inventory() {
 
                     {inventory.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center text-muted py-4">
+                        <td colSpan="7" className="text-center text-muted py-3">
                           No inventory records found for this active branch.
                         </td>
                       </tr>
@@ -798,7 +801,7 @@ export default function Inventory() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
               Stock operations are available only for active branches. Historical inventory data can remain stored for inactive branches.
             </div>
           </div>
@@ -815,11 +818,11 @@ function InfoPill({ label, value, bg, color, border }) {
         background: bg,
         color,
         border: `1px solid ${border}`,
-        padding: "7px 11px",
+        padding: "5px 9px",
         borderRadius: 999,
         fontWeight: 800,
-        fontSize: 13,
-        maxWidth: 280,
+        fontSize: 12,
+        maxWidth: 250,
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
@@ -832,27 +835,29 @@ function InfoPill({ label, value, bg, color, border }) {
 
 function SummaryCard({ title, value, icon, hint }) {
   return (
-    <div className="col-12 col-sm-6 col-xl-3">
+    <div className="col-6 col-xl-3">
       <div
-        className="p-3 h-100"
+        className="h-100"
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           border: "1px solid rgba(148,163,184,.28)",
-          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           background: "rgba(255,255,255,.88)",
+          padding: "10px 14px",
+          minHeight: 82,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
-            <div style={{ fontSize: 26, fontWeight: 900, color: "#0F172A" }}>
+            <div style={{ fontSize: 23, lineHeight: 1.05, fontWeight: 900, color: "#0F172A" }}>
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -860,13 +865,13 @@ function SummaryCard({ title, value, icon, hint }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
               flex: "0 0 auto",
             }}
           >
@@ -882,17 +887,19 @@ function MiniStat({ title, value }) {
   return (
     <div className="col-6">
       <div
-        className="p-2"
         style={{
-          borderRadius: 14,
+          borderRadius: 12,
           border: "1px solid rgba(148,163,184,.25)",
           background: "rgba(248,250,252,.9)",
+          padding: "8px 10px",
         }}
       >
-        <div className="text-muted" style={{ fontSize: 12, fontWeight: 700 }}>
+        <div className="text-muted" style={{ fontSize: 11.5, fontWeight: 700 }}>
           {title}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#0F172A" }}>{value}</div>
+        <div style={{ fontSize: 19, lineHeight: 1.1, fontWeight: 900, color: "#0F172A" }}>
+          {value}
+        </div>
       </div>
     </div>
   );

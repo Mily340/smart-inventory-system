@@ -9,9 +9,9 @@ const statusBadgeStyle = (status) => {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "6px 10px",
+    padding: "4px 8px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 800,
     border: "1px solid transparent",
     whiteSpace: "nowrap",
@@ -209,27 +209,29 @@ export default function BranchStock() {
   }, [branchId]);
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   const summaryCardStyle = {
-    borderRadius: 16,
+    borderRadius: 14,
     border: "1px solid rgba(148,163,184,.28)",
-    boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+    boxShadow: "0 5px 13px rgba(15,23,42,.04)",
     background: "rgba(255,255,255,.88)",
+    padding: "10px 14px",
+    minHeight: 82,
   };
 
   return (
@@ -237,12 +239,12 @@ export default function BranchStock() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Branch Stock
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
               {isBranchScoped
                 ? "View stock availability for your assigned branch."
                 : "Monitor branch-wise product stock, reorder levels, and stock status."}
@@ -254,7 +256,7 @@ export default function BranchStock() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             onClick={load}
@@ -267,31 +269,31 @@ export default function BranchStock() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="card mb-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Stock Overview
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
+                <div className="text-muted" style={{ fontSize: 12 }}>
                   {selectedBranch
                     ? `Currently viewing: ${selectedBranch.code ? `${selectedBranch.code} - ` : ""}${selectedBranch.name}`
                     : "Select a branch to view stock information."}
                 </div>
               </div>
 
-              <div style={{ minWidth: 320 }}>
+              <div style={{ minWidth: 280 }}>
                 {isBranchScoped ? (
                   <div
-                    className="form-control"
+                    className="form-control form-control-sm"
                     style={{
-                      borderRadius: 12,
+                      borderRadius: 10,
                       background: "#F8FAFC",
                       color: "#0F172A",
                       fontWeight: 700,
@@ -303,8 +305,8 @@ export default function BranchStock() {
                   </div>
                 ) : (
                   <select
-                    className="form-select"
-                    style={{ borderRadius: 12 }}
+                    className="form-select form-select-sm"
+                    style={{ borderRadius: 10 }}
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
                   >
@@ -320,8 +322,8 @@ export default function BranchStock() {
             </div>
           </div>
 
-          <div className="card-body">
-            <div className="row g-3">
+          <div className="card-body py-2 px-3">
+            <div className="row g-2">
               <SummaryCard
                 title="Total Items"
                 value={summary.total}
@@ -355,7 +357,7 @@ export default function BranchStock() {
         </div>
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Stock List
@@ -366,21 +368,24 @@ export default function BranchStock() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading branch stock...</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-bordered table-hover align-middle">
+                <table
+                  className="table table-sm table-bordered table-hover align-middle mb-0"
+                  style={{ fontSize: 13 }}
+                >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 150 }}>Product Code</th>
-                      <th style={{ minWidth: 240 }}>Product</th>
-                      <th style={{ minWidth: 150 }}>Category</th>
-                      <th style={{ width: 100 }}>Unit</th>
-                      <th style={{ width: 150 }}>Qty Available</th>
-                      <th style={{ width: 160 }}>Reorder Level</th>
-                      <th style={{ width: 150, textAlign: "center" }}>Status</th>
+                      <th style={{ width: 125 }}>Product Code</th>
+                      <th style={{ minWidth: 220 }}>Product</th>
+                      <th style={{ minWidth: 140 }}>Category</th>
+                      <th style={{ width: 85 }}>Unit</th>
+                      <th style={{ width: 125 }}>Qty Available</th>
+                      <th style={{ width: 135 }}>Reorder Level</th>
+                      <th style={{ width: 130, textAlign: "center" }}>Status</th>
                     </tr>
                   </thead>
 
@@ -410,7 +415,7 @@ export default function BranchStock() {
 
                     {items.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center text-muted py-4">
+                        <td colSpan="7" className="text-center text-muted py-3">
                           No inventory found for this branch. Stock in products first.
                         </td>
                       </tr>
@@ -420,7 +425,7 @@ export default function BranchStock() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
               Stock status is calculated using quantity and reorder level. “Low Stock” appears when available quantity is equal to or below the reorder level.
             </div>
           </div>
@@ -432,17 +437,17 @@ export default function BranchStock() {
 
 function SummaryCard({ title, value, icon, hint, style }) {
   return (
-    <div className="col-12 col-sm-6 col-xl-3">
-      <div style={style} className="p-3 h-100">
-        <div className="d-flex justify-content-between align-items-start">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+    <div className="col-6 col-xl-3">
+      <div style={style} className="h-100">
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "#0F172A" }}>
+            <div style={{ fontSize: 23, lineHeight: 1.05, fontWeight: 900, color: "#0F172A" }}>
               {value}
             </div>
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -450,13 +455,14 @@ function SummaryCard({ title, value, icon, hint, style }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
+              flex: "0 0 auto",
             }}
           >
             <i className={`bi ${icon}`}></i>

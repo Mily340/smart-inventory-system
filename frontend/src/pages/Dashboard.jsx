@@ -5,14 +5,13 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  Tooltip,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend,
+  Tooltip,
+  Cell,
 } from "recharts";
 import client from "../api/client";
 import NavBar from "../components/NavBar";
@@ -50,7 +49,7 @@ const statusBadgeStyle = (status) => {
   const base = {
     display: "inline-flex",
     alignItems: "center",
-    padding: "5px 9px",
+    padding: "4px 8px",
     borderRadius: 999,
     fontSize: 11,
     fontWeight: 800,
@@ -71,6 +70,8 @@ const statusBadgeStyle = (status) => {
     IN_TRANSIT: { background: "#F5F3FF", color: "#5B21B6", borderColor: "#DDD6FE" },
     PICKED_UP: { background: "#FFF7ED", color: "#9A3412", borderColor: "#FED7AA" },
     LOW: { background: "#FFF7ED", color: "#C2410C", borderColor: "#FED7AA" },
+    NEW: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    READ: { background: "#F3F4F6", color: "#4B5563", borderColor: "#E5E7EB" },
   };
 
   return {
@@ -230,14 +231,14 @@ export default function Dashboard() {
         title: "Total Products",
         value: kpis.totalProducts,
         icon: "bi-box-seam",
-        hint: "Active catalog items",
+        hint: "Catalog items",
         pastel: "rgba(186, 230, 253, 0.55)",
       },
       {
         title: "Low Stock Items",
         value: kpis.lowStockItems,
         icon: "bi-exclamation-triangle",
-        hint: "Below reorder level",
+        hint: "Below reorder",
         pastel: "rgba(254, 215, 170, 0.55)",
       },
       {
@@ -251,7 +252,7 @@ export default function Dashboard() {
         title: "Pending Deliveries",
         value: kpis.pendingDeliveries,
         icon: "bi-truck",
-        hint: "Assigned to riders",
+        hint: "Assigned riders",
         pastel: "rgba(187, 247, 208, 0.55)",
       },
     ],
@@ -334,34 +335,66 @@ export default function Dashboard() {
       map.set(key, (map.get(key) || 0) + 1);
     }
 
-    const arr = Array.from(map.entries()).map(([branch, count]) => ({ branch, count }));
-    arr.sort((a, b) => b.count - a.count);
+    const arr = Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    arr.sort((a, b) => b.value - a.value);
 
     return arr.slice(0, 8);
   }, [lowStock]);
 
-  const hasAnyData = (arr) => arr?.some((x) => (x.value ?? x.count ?? 0) > 0);
+  const hasAnyData = (arr) => arr?.some((x) => Number(x.value || 0) > 0);
 
   const recentOrders = useMemo(() => orders.slice(0, 5), [orders]);
   const recentTransfers = useMemo(() => transfers.slice(0, 5), [transfers]);
   const recentLowStock = useMemo(() => lowStock.slice(0, 5), [lowStock]);
 
+  const chartConfig = useMemo(() => {
+    if (chartTab === "orders") {
+      return {
+        title: "Orders by Status",
+        type: "donut",
+        data: ordersByStatus,
+      };
+    }
+
+    if (chartTab === "transfers") {
+      return {
+        title: "Transfers by Status",
+        type: "bar",
+        data: transfersByStatus,
+      };
+    }
+
+    if (chartTab === "stock") {
+      return {
+        title: "Low Stock by Branch",
+        type: "bar",
+        data: lowStockByBranch,
+      };
+    }
+
+    return {
+      title: "Deliveries by Status",
+      type: "donut",
+      data: deliveriesByStatus,
+    };
+  }, [chartTab, ordersByStatus, transfersByStatus, lowStockByBranch, deliveriesByStatus]);
+
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
     background: "rgba(255,255,255,.9)",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   return (
@@ -369,14 +402,14 @@ export default function Dashboard() {
       <NavBar />
 
       <main className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+        <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Dashboard
-            </h2>
+            </h3>
 
-            <div className="text-muted" style={{ marginTop: 4 }}>
-              Quick overview using live system data.
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
+              Live system overview.
               {role ? (
                 <span>
                   {" "}
@@ -393,7 +426,7 @@ export default function Dashboard() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             title="Refresh"
@@ -404,12 +437,12 @@ export default function Dashboard() {
         </div>
 
         {err ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {err}
           </div>
         ) : null}
 
-        <div className="row g-3 mb-4">
+        <div className="row g-2 mb-3">
           {kpiCards.map((c) => (
             <KpiCard
               key={c.title}
@@ -422,14 +455,14 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <div className="card mb-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Quick Actions
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
+                <div className="text-muted" style={{ fontSize: 12 }}>
                   Fast access to the most used modules for your role.
                 </div>
               </div>
@@ -437,8 +470,8 @@ export default function Dashboard() {
               <span
                 className="text-muted"
                 style={{
-                  fontSize: 12,
-                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -449,19 +482,19 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             <div className="row g-2">
               {quickActions.map((a) => (
                 <div className="col-12 col-sm-6 col-xl-3" key={a.path}>
                   <button
-                    className="btn w-100 text-start"
+                    className="btn w-100 text-start btn-sm"
                     onClick={() => navigate(a.path)}
                     style={{
-                      borderRadius: 14,
+                      borderRadius: 12,
                       border: "1px solid rgba(148,163,184,.28)",
                       background: "rgba(248,250,252,.85)",
                       fontWeight: 800,
-                      padding: "12px 14px",
+                      padding: "8px 10px",
                     }}
                   >
                     <i className={`bi ${a.icon} me-2 text-primary`}></i>
@@ -476,22 +509,22 @@ export default function Dashboard() {
         <div className="row g-3">
           <div className="col-12 col-xl-8">
             <div className="card" style={panelStyle}>
-              <div className="card-body" style={headerCardStyle}>
+              <div className="card-body py-2 px-3" style={headerCardStyle}>
                 <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center">
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                       Analytics
                     </div>
-                    <div className="text-muted" style={{ fontSize: 13 }}>
-                      Live distribution based on operational data.
+                    <div className="text-muted" style={{ fontSize: 12 }}>
+                      Donut charts show distribution; bar charts compare operational counts.
                     </div>
                   </div>
 
                   <span
                     className="text-muted"
                     style={{
-                      fontSize: 12,
-                      padding: "6px 10px",
+                      fontSize: 11.5,
+                      padding: "4px 9px",
                       borderRadius: 999,
                       border: "1px solid rgba(148,163,184,.35)",
                       background: "rgba(255,255,255,.85)",
@@ -504,8 +537,8 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="card-body">
-                <div className="d-flex flex-wrap gap-2 mb-3">
+              <div className="card-body py-2 px-3">
+                <div className="d-flex flex-wrap gap-2 mb-2">
                   <TabBtn active={chartTab === "orders"} onClick={() => setChartTab("orders")}>
                     Orders
                   </TabBtn>
@@ -521,115 +554,47 @@ export default function Dashboard() {
                 </div>
 
                 <div
-                  className="rounded-4 border p-2"
+                  className="rounded-4 border"
                   style={{
-                    height: 280,
+                    minHeight: 292,
                     background:
-                      "linear-gradient(180deg, rgba(186, 230, 253, 0.30) 0%, rgba(255, 255, 255, 1) 70%)",
+                      "linear-gradient(180deg, rgba(186, 230, 253, 0.22) 0%, rgba(255, 255, 255, 1) 70%)",
+                    padding: "10px 12px 8px",
+                    overflow: "hidden",
                   }}
                 >
+                  <div
+                    className="d-flex justify-content-between align-items-center mb-1"
+                    style={{ minHeight: 22 }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>
+                      {chartConfig.title}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: 11.5 }}>
+                      {chartConfig.data.reduce((sum, item) => sum + Number(item.value || 0), 0)} total
+                    </div>
+                  </div>
+
                   {loading ? (
-                    <div className="h-100 d-flex align-items-center justify-content-center text-muted">
+                    <div
+                      className="d-flex align-items-center justify-content-center text-muted"
+                      style={{ height: 245 }}
+                    >
                       Loading charts…
                     </div>
-                  ) : chartTab === "orders" ? (
-                    hasAnyData(ordersByStatus) ? (
-                      <div className="h-100">
-                        <div className="small text-muted px-2 pt-1">Distribution by order status</div>
-                        <ResponsiveContainer width="100%" height="92%">
-                          <PieChart>
-                            <Tooltip content={<SoftTooltip />} />
-                            <Legend verticalAlign="bottom" height={24} />
-                            <Pie
-                              data={ordersByStatus}
-                              dataKey="value"
-                              nameKey="name"
-                              innerRadius={50}
-                              outerRadius={82}
-                              paddingAngle={2}
-                            >
-                              {ordersByStatus.map((_, i) => (
-                                <Cell key={i} fill={PASTEL[i % PASTEL.length]} />
-                              ))}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
+                  ) : hasAnyData(chartConfig.data) ? (
+                    chartConfig.type === "donut" ? (
+                      <MixedDonutChart data={chartConfig.data} />
                     ) : (
-                      <EmptyChart />
+                      <MixedBarChart data={chartConfig.data} rotateLabel={chartTab === "stock"} />
                     )
-                  ) : chartTab === "transfers" ? (
-                    hasAnyData(transfersByStatus) ? (
-                      <div className="h-100">
-                        <div className="small text-muted px-2 pt-1">Count by transfer status</div>
-                        <ResponsiveContainer width="100%" height="92%">
-                          <BarChart data={transfersByStatus} margin={{ top: 10, right: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                            <Tooltip content={<SoftTooltip />} />
-                            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                              {transfersByStatus.map((_, i) => (
-                                <Cell key={i} fill={PASTEL[i % PASTEL.length]} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <EmptyChart />
-                    )
-                  ) : chartTab === "stock" ? (
-                    lowStockByBranch.length ? (
-                      <div className="h-100">
-                        <div className="small text-muted px-2 pt-1">
-                          Low-stock items per branch
-                        </div>
-                        <ResponsiveContainer width="100%" height="92%">
-                          <BarChart data={lowStockByBranch} margin={{ top: 10, right: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="branch"
-                              tick={{ fontSize: 10 }}
-                              interval={0}
-                              angle={-12}
-                              height={48}
-                            />
-                            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                            <Tooltip content={<SoftTooltip />} />
-                            <Bar dataKey="count" fill={PASTEL[1]} radius={[8, 8, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <EmptyChart />
-                    )
-                  ) : hasAnyData(deliveriesByStatus) ? (
-                    <div className="h-100">
-                      <div className="small text-muted px-2 pt-1">
-                        Delivery status distribution
-                      </div>
-                      <ResponsiveContainer width="100%" height="92%">
-                        <PieChart>
-                          <Tooltip content={<SoftTooltip />} />
-                          <Legend verticalAlign="bottom" height={24} />
-                          <Pie
-                            data={deliveriesByStatus}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={50}
-                            outerRadius={82}
-                            paddingAngle={2}
-                          >
-                            {deliveriesByStatus.map((_, i) => (
-                              <Cell key={i} fill={PASTEL[(i + 2) % PASTEL.length]} />
-                            ))}
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
                   ) : (
-                    <EmptyChart />
+                    <div
+                      className="d-flex align-items-center justify-content-center text-muted"
+                      style={{ height: 245 }}
+                    >
+                      No data to display
+                    </div>
                   )}
                 </div>
               </div>
@@ -638,13 +603,13 @@ export default function Dashboard() {
 
           <div className="col-12 col-xl-4">
             <div className="card mb-3" style={panelStyle}>
-              <div className="card-body" style={headerCardStyle}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+              <div className="card-body py-2 px-3" style={headerCardStyle}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Summary
                 </div>
               </div>
 
-              <div className="card-body">
+              <div className="card-body py-2 px-3">
                 <SummaryLine label="Total Products" value={loading ? "…" : kpis.totalProducts} />
                 <SummaryLine label="Low Stock" value={loading ? "…" : kpis.lowStockItems} />
                 <SummaryLine label="Pending Orders" value={loading ? "…" : kpis.pendingOrders} />
@@ -656,17 +621,17 @@ export default function Dashboard() {
             </div>
 
             <div className="card" style={panelStyle}>
-              <div className="card-body" style={headerCardStyle}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+              <div className="card-body py-2 px-3" style={headerCardStyle}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Notes
                 </div>
               </div>
 
-              <div className="card-body">
-                <ul className="m-0 text-muted" style={{ fontSize: 13, paddingLeft: 18 }}>
+              <div className="card-body py-2 px-3">
+                <ul className="m-0 text-muted" style={{ fontSize: 12.5, paddingLeft: 18 }}>
                   <li>Charts use live API data.</li>
-                  <li>Low stock is calculated from reorder level.</li>
-                  <li>Refresh after changing orders, stock, or transfers.</li>
+                  <li>Donut charts show status distribution.</li>
+                  <li>Bar charts compare transfer and stock counts.</li>
                 </ul>
               </div>
             </div>
@@ -679,8 +644,8 @@ export default function Dashboard() {
           <RecentLowStock lowStock={recentLowStock} loading={loading} />
         </div>
 
-        <div className="card mt-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mt-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex justify-content-between align-items-center">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Recent Activity
@@ -692,18 +657,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading activity…</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-sm align-middle mb-0">
+                <table className="table table-sm align-middle mb-0" style={{ fontSize: 13 }}>
                   <thead>
                     <tr>
-                      <th style={{ width: 130 }}>Type</th>
+                      <th style={{ width: 120 }}>Type</th>
                       <th>Details</th>
-                      <th style={{ width: 140 }}>Status</th>
-                      <th style={{ width: 170 }}>Time</th>
+                      <th style={{ width: 125 }}>Status</th>
+                      <th style={{ width: 145 }}>Time</th>
                     </tr>
                   </thead>
 
@@ -721,7 +686,7 @@ export default function Dashboard() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="text-center text-muted py-4">
+                        <td colSpan={4} className="text-center text-muted py-3">
                           No recent activity found
                         </td>
                       </tr>
@@ -737,29 +702,127 @@ export default function Dashboard() {
   );
 }
 
+function MixedDonutChart({ data }) {
+  return (
+    <div>
+      <div style={{ height: 185 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Tooltip content={<SoftTooltip />} />
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={48}
+              outerRadius={78}
+              paddingAngle={2}
+              startAngle={90}
+              endAngle={-270}
+            >
+              {data.map((_, i) => (
+                <Cell key={i} fill={PASTEL[i % PASTEL.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      <ChartLegend data={data} />
+    </div>
+  );
+}
+
+function MixedBarChart({ data, rotateLabel }) {
+  return (
+    <div style={{ height: 245 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 8, right: 12, left: -18, bottom: 30 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 10 }}
+            interval={0}
+            angle={rotateLabel ? -12 : 0}
+            textAnchor={rotateLabel ? "end" : "middle"}
+            height={42}
+          />
+          <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+          <Tooltip content={<SoftTooltip />} />
+          <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={34}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={PASTEL[i % PASTEL.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ChartLegend({ data }) {
+  return (
+    <div
+      className="d-flex flex-wrap justify-content-center gap-2"
+      style={{
+        maxHeight: 54,
+        overflow: "hidden",
+        padding: "2px 4px 0",
+      }}
+    >
+      {data.map((item, i) => (
+        <span
+          key={item.name}
+          className="d-inline-flex align-items-center"
+          style={{
+            gap: 5,
+            fontSize: 11.5,
+            fontWeight: 700,
+            color: "#475569",
+          }}
+          title={`${item.name}: ${item.value}`}
+        >
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 3,
+              background: PASTEL[i % PASTEL.length],
+              display: "inline-block",
+              flex: "0 0 auto",
+            }}
+          />
+          {item.name}: {item.value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function KpiCard({ title, value, icon, hint, pastel }) {
   return (
-    <div className="col-12 col-sm-6 col-xl-3">
+    <div className="col-6 col-xl-3">
       <div
-        className="h-100 p-3"
+        className="h-100"
         style={{
-          borderRadius: 18,
-          boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+          borderRadius: 14,
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           border: "1px solid rgba(148,163,184,.28)",
           background: "rgba(255,255,255,.9)",
+          padding: "10px 14px",
+          minHeight: 82,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
-            <div style={{ fontSize: 30, fontWeight: 900, color: "#0F172A" }}>
+            <div style={{ fontSize: 23, lineHeight: 1.05, fontWeight: 900, color: "#0F172A" }}>
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -767,12 +830,13 @@ function KpiCard({ title, value, icon, hint, pastel }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: pastel,
               border: "1px solid rgba(15, 23, 42, 0.08)",
               flex: "0 0 auto",
+              fontSize: 15,
             }}
           >
             <i className={`bi ${icon}`} />
@@ -785,8 +849,8 @@ function KpiCard({ title, value, icon, hint, pastel }) {
 
 function SummaryLine({ label, value }) {
   return (
-    <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
-      <span className="text-muted" style={{ fontSize: 14 }}>
+    <div className="d-flex justify-content-between align-items-center py-1 border-bottom">
+      <span className="text-muted" style={{ fontSize: 13 }}>
         {label}
       </span>
 
@@ -809,7 +873,8 @@ function TabBtn({ active, onClick, children }) {
               background: "rgba(221, 214, 254, 0.85)",
               color: "#0f172a",
               fontWeight: 800,
-              padding: "7px 13px",
+              padding: "5px 11px",
+              fontSize: 12.5,
             }
           : {
               borderRadius: 999,
@@ -817,7 +882,8 @@ function TabBtn({ active, onClick, children }) {
               background: "rgba(255, 255, 255, 0.75)",
               color: "#0f172a",
               fontWeight: 800,
-              padding: "7px 13px",
+              padding: "5px 11px",
+              fontSize: 12.5,
             }
       }
     >
@@ -885,27 +951,27 @@ function SmallListCard({ title, icon, loading, emptyText, rows }) {
       <div
         className="card h-100"
         style={{
-          borderRadius: 18,
-          border: "1px solid rgba(148,163,184,.35)",
-          boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+          borderRadius: 14,
+          border: "1px solid rgba(148,163,184,.32)",
+          boxShadow: "0 6px 16px rgba(15,23,42,.04)",
           overflow: "hidden",
           background: "rgba(255,255,255,.9)",
         }}
       >
         <div
-          className="card-body"
+          className="card-body py-2 px-3"
           style={{
-            background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-            borderBottom: "1px solid rgba(148,163,184,.25)",
+            background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+            borderBottom: "1px solid rgba(148,163,184,.22)",
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
             <i className={`bi ${icon} me-2 text-primary`}></i>
             {title}
           </div>
         </div>
 
-        <div className="card-body">
+        <div className="card-body py-2 px-3">
           {loading ? (
             <div className="text-muted">Loading...</div>
           ) : rows.length === 0 ? (
@@ -917,10 +983,10 @@ function SmallListCard({ title, icon, loading, emptyText, rows }) {
                   key={r.key}
                   className="d-flex justify-content-between align-items-start gap-2"
                   style={{
-                    borderRadius: 14,
+                    borderRadius: 12,
                     border: "1px solid rgba(148,163,184,.25)",
                     background: "rgba(248,250,252,.7)",
-                    padding: "10px 12px",
+                    padding: "8px 10px",
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
@@ -928,17 +994,17 @@ function SmallListCard({ title, icon, loading, emptyText, rows }) {
                       style={{
                         fontWeight: 900,
                         color: "#0F172A",
-                        fontSize: 13,
+                        fontSize: 12.5,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        maxWidth: 240,
+                        maxWidth: 230,
                       }}
                     >
                       {r.title}
                     </div>
 
-                    <div className="text-muted" style={{ fontSize: 12 }}>
+                    <div className="text-muted" style={{ fontSize: 11.5 }}>
                       {r.subtitle}
                     </div>
                   </div>
@@ -954,19 +1020,11 @@ function SmallListCard({ title, icon, loading, emptyText, rows }) {
   );
 }
 
-function EmptyChart() {
-  return (
-    <div className="h-100 d-flex align-items-center justify-content-center text-muted">
-      No data to display
-    </div>
-  );
-}
-
 function SoftTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
 
   const p = payload[0];
-  const name = p?.name ?? label ?? "";
+  const name = p?.payload?.name ?? label ?? p?.name ?? "";
   const value = p?.value ?? "—";
 
   return (

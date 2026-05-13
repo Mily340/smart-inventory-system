@@ -7,10 +7,10 @@ import NavBar from "../components/NavBar";
 const statusBadgeStyle = (active) => ({
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  padding: "6px 10px",
+  gap: 5,
+  padding: "4px 8px",
   borderRadius: 999,
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 800,
   border: active ? "1px solid #A7F3D0" : "1px solid #E5E7EB",
   background: active ? "#ECFDF5" : "#F3F4F6",
@@ -19,17 +19,17 @@ const statusBadgeStyle = (active) => ({
 });
 
 const smallActionBtnStyle = {
-  borderRadius: 9,
+  borderRadius: 8,
   fontWeight: 700,
-  padding: "5px 10px",
-  fontSize: 13,
-  lineHeight: 1.25,
+  padding: "4px 8px",
+  fontSize: 12,
+  lineHeight: 1.2,
   whiteSpace: "nowrap",
 };
 
 const toggleBtnStyle = {
   ...smallActionBtnStyle,
-  minWidth: 112,
+  minWidth: 100,
 };
 
 export default function Branches() {
@@ -221,24 +221,24 @@ export default function Branches() {
   };
 
   const pageWrapStyle = {
-    marginTop: 18,
-    paddingBottom: 26,
+    marginTop: 10,
+    paddingBottom: 18,
   };
 
   const panelStyle = {
-    borderRadius: 18,
-    border: "1px solid rgba(148,163,184,.35)",
-    boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,.32)",
+    boxShadow: "0 6px 16px rgba(15,23,42,.04)",
     overflow: "hidden",
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.55), rgba(255,255,255,1))",
-    borderBottom: "1px solid rgba(148,163,184,.25)",
+    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
   const inputStyle = {
-    borderRadius: 12,
+    borderRadius: 10,
   };
 
   return (
@@ -246,14 +246,13 @@ export default function Branches() {
       <NavBar />
 
       <div className="container-fluid px-4" style={pageWrapStyle}>
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
           <div>
-            <h2 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
+            <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Branches
-            </h2>
-            <div className="text-muted" style={{ marginTop: 4 }}>
-              Manage branch locations, contact numbers, operational status, and geographic
-              details.
+            </h3>
+            <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
+              Manage branch locations, contact numbers, status, and map coordinates.
             </div>
           </div>
 
@@ -262,7 +261,7 @@ export default function Branches() {
             style={{
               borderRadius: 10,
               fontWeight: 700,
-              padding: "8px 14px",
+              padding: "6px 12px",
               background: "rgba(255,255,255,.85)",
             }}
             onClick={fetchBranches}
@@ -275,24 +274,24 @@ export default function Branches() {
         </div>
 
         {error ? (
-          <div className="alert alert-danger" style={{ borderRadius: 14 }}>
+          <div className="alert alert-danger py-2 mb-2" style={{ borderRadius: 12 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="row g-3 mb-4">
+        <div className="row g-2 mb-3">
           <SummaryCard
             title="Total Branches"
             value={summary.total}
             icon="bi-building"
-            hint="All registered locations"
+            hint="Registered locations"
           />
 
           <SummaryCard
             title="Active"
             value={summary.active}
             icon="bi-check-circle"
-            hint="Available for operations"
+            hint="Available operations"
           />
 
           <SummaryCard
@@ -303,23 +302,23 @@ export default function Branches() {
           />
         </div>
 
-        <div className="card mb-4" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+        <div className="card mb-3" style={panelStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Create Branch
                 </div>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  Add a new branch with address, phone number, and map coordinates.
+                <div className="text-muted" style={{ fontSize: 12 }}>
+                  Add branch address, contact number, and coordinates.
                 </div>
               </div>
 
               <span
                 className="text-muted"
                 style={{
-                  fontSize: 12,
-                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  padding: "4px 9px",
                   borderRadius: 999,
                   border: "1px solid rgba(148,163,184,.35)",
                   background: "rgba(255,255,255,.85)",
@@ -330,7 +329,7 @@ export default function Branches() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             <form onSubmit={createBranch} className="row g-2 align-items-end">
               <div className="col-12 col-xl-2">
                 <label className="form-label small text-muted mb-1" htmlFor="branchName">
@@ -340,7 +339,7 @@ export default function Branches() {
                 <input
                   id="branchName"
                   name="branchName"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   style={inputStyle}
                   placeholder="Head Office"
                   value={name}
@@ -357,7 +356,7 @@ export default function Branches() {
                 <input
                   id="branchAddress"
                   name="branchAddress"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   style={inputStyle}
                   placeholder="Uttara, Dhaka"
                   value={address}
@@ -374,7 +373,7 @@ export default function Branches() {
                 <input
                   id="branchPhone"
                   name="branchPhone"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   style={inputStyle}
                   placeholder="017XXXXXXXX"
                   value={phone}
@@ -390,7 +389,7 @@ export default function Branches() {
                 <input
                   id="branchLatitude"
                   name="branchLatitude"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   style={inputStyle}
                   placeholder="23.8103"
                   value={latitude}
@@ -407,7 +406,7 @@ export default function Branches() {
                 <input
                   id="branchLongitude"
                   name="branchLongitude"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   style={inputStyle}
                   placeholder="90.4125"
                   value={longitude}
@@ -418,13 +417,14 @@ export default function Branches() {
 
               <div className="col-12 col-xl-1 d-grid">
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   style={{
-                    borderRadius: 12,
+                    borderRadius: 10,
                     fontWeight: 800,
-                    padding: "10px 12px",
+                    minHeight: 31,
                     whiteSpace: "nowrap",
                   }}
+                  title="Create branch"
                 >
                   <i className="bi bi-plus-circle"></i>
                 </button>
@@ -434,7 +434,7 @@ export default function Branches() {
         </div>
 
         <div className="card" style={panelStyle}>
-          <div className="card-body" style={headerCardStyle}>
+          <div className="card-body py-2 px-3" style={headerCardStyle}>
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div style={{ fontSize: 14, fontWeight: 900, color: "#0F172A" }}>
                 Branch List
@@ -446,22 +446,25 @@ export default function Branches() {
             </div>
           </div>
 
-          <div className="card-body">
+          <div className="card-body py-2 px-3">
             {loading ? (
               <div className="text-muted">Loading branches...</div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-bordered table-hover align-middle mb-0">
+                <table
+                  className="table table-sm table-bordered table-hover align-middle mb-0"
+                  style={{ fontSize: 13 }}
+                >
                   <thead className="table-light">
                     <tr>
-                      <th style={{ width: 95 }}>Code</th>
-                      <th style={{ minWidth: 150 }}>Name</th>
-                      <th style={{ minWidth: 210 }}>Address</th>
-                      <th style={{ minWidth: 140 }}>Phone</th>
-                      <th style={{ width: 115 }}>Latitude</th>
-                      <th style={{ width: 115 }}>Longitude</th>
-                      <th style={{ width: 130 }}>Status</th>
-                      <th style={{ width: 235, textAlign: "center" }}>Actions</th>
+                      <th style={{ width: 85 }}>Code</th>
+                      <th style={{ minWidth: 145 }}>Name</th>
+                      <th style={{ minWidth: 190 }}>Address</th>
+                      <th style={{ minWidth: 125 }}>Phone</th>
+                      <th style={{ width: 100 }}>Latitude</th>
+                      <th style={{ width: 100 }}>Longitude</th>
+                      <th style={{ width: 115 }}>Status</th>
+                      <th style={{ width: 210, textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -500,7 +503,7 @@ export default function Branches() {
                           </td>
 
                           <td className="text-center">
-                            <div className="d-inline-flex gap-2 justify-content-center align-items-center">
+                            <div className="d-inline-flex gap-1 justify-content-center align-items-center">
                               <button
                                 className="btn btn-sm btn-outline-primary"
                                 style={smallActionBtnStyle}
@@ -518,9 +521,7 @@ export default function Branches() {
                                 style={toggleBtnStyle}
                                 onClick={() => toggleActive(b)}
                                 disabled={busyId === b.id}
-                                title={
-                                  active ? "Deactivate this branch" : "Activate this branch"
-                                }
+                                title={active ? "Deactivate this branch" : "Activate this branch"}
                               >
                                 {busyId === b.id ? (
                                   "Working..."
@@ -544,7 +545,7 @@ export default function Branches() {
 
                     {branches.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="text-center text-muted py-4">
+                        <td colSpan="8" className="text-center text-muted py-3">
                           No branches found
                         </td>
                       </tr>
@@ -554,9 +555,9 @@ export default function Branches() {
               </div>
             )}
 
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 10 }}>
-              Inactive branches remain stored in the system. Assigned Branch Managers
-              and Branch Staff cannot access operational pages while their branch is inactive.
+            <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
+              Inactive branches remain stored. Assigned Branch Managers and Branch Staff cannot
+              access operational pages while their branch is inactive.
             </div>
           </div>
         </div>
@@ -569,7 +570,7 @@ export default function Branches() {
               <div
                 className="modal-content"
                 style={{
-                  borderRadius: 18,
+                  borderRadius: 16,
                   border: "1px solid rgba(148,163,184,.35)",
                   boxShadow: "0 18px 45px rgba(15,23,42,.16)",
                   overflow: "hidden",
@@ -577,27 +578,27 @@ export default function Branches() {
               >
                 <form onSubmit={saveEdit}>
                   <div
-                    className="modal-header"
+                    className="modal-header py-2 px-3"
                     style={{
                       background:
                         "linear-gradient(180deg, rgba(219,234,254,.65), rgba(255,255,255,1))",
                     }}
                   >
                     <div>
-                      <h5 className="modal-title" style={{ fontWeight: 900 }}>
+                      <h5 className="modal-title" style={{ fontWeight: 900, fontSize: 17 }}>
                         Edit Branch
                       </h5>
 
-                      <div className="text-muted" style={{ fontSize: 13 }}>
-                        Update branch details, contact number, and operational status.
+                      <div className="text-muted" style={{ fontSize: 12 }}>
+                        Update branch details, contact number, and status.
                       </div>
                     </div>
 
                     <button type="button" className="btn-close" onClick={closeEdit} />
                   </div>
 
-                  <div className="modal-body">
-                    <div className="row g-3">
+                  <div className="modal-body py-3 px-3">
+                    <div className="row g-2">
                       <div className="col-12">
                         <label
                           className="form-label small text-muted mb-1"
@@ -609,7 +610,7 @@ export default function Branches() {
                         <input
                           id="editBranchName"
                           name="editBranchName"
-                          className="form-control"
+                          className="form-control form-control-sm"
                           style={inputStyle}
                           value={eName}
                           onChange={(e) => setEName(e.target.value)}
@@ -628,7 +629,7 @@ export default function Branches() {
                         <input
                           id="editBranchAddress"
                           name="editBranchAddress"
-                          className="form-control"
+                          className="form-control form-control-sm"
                           style={inputStyle}
                           value={eAddress}
                           onChange={(e) => setEAddress(e.target.value)}
@@ -647,7 +648,7 @@ export default function Branches() {
                         <input
                           id="editBranchPhone"
                           name="editBranchPhone"
-                          className="form-control"
+                          className="form-control form-control-sm"
                           style={inputStyle}
                           value={ePhone}
                           placeholder="017XXXXXXXX"
@@ -666,7 +667,7 @@ export default function Branches() {
                         <input
                           id="editBranchLatitude"
                           name="editBranchLatitude"
-                          className="form-control"
+                          className="form-control form-control-sm"
                           style={inputStyle}
                           value={eLat}
                           onChange={(e) => setELat(e.target.value)}
@@ -685,7 +686,7 @@ export default function Branches() {
                         <input
                           id="editBranchLongitude"
                           name="editBranchLongitude"
-                          className="form-control"
+                          className="form-control form-control-sm"
                           style={inputStyle}
                           value={eLng}
                           onChange={(e) => setELng(e.target.value)}
@@ -695,11 +696,11 @@ export default function Branches() {
 
                       <div className="col-12">
                         <div
-                          className="p-3"
                           style={{
-                            borderRadius: 14,
+                            borderRadius: 12,
                             background: "rgba(248,250,252,.9)",
                             border: "1px solid rgba(148,163,184,.25)",
+                            padding: "10px 12px",
                           }}
                         >
                           <div className="form-check">
@@ -717,19 +718,19 @@ export default function Branches() {
                           </div>
 
                           <div className="text-muted small mt-1">
-                            If inactive, assigned Branch Managers and Branch Staff will see
-                            only the inactive branch notice after login.
+                            If inactive, assigned Branch Managers and Branch Staff will see only the
+                            inactive branch notice after login.
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="modal-footer">
+                  <div className="modal-footer py-2 px-3">
                     <button
                       type="button"
-                      className="btn btn-outline-secondary"
-                      style={{ borderRadius: 10, fontWeight: 700 }}
+                      className="btn btn-outline-secondary btn-sm"
+                      style={{ borderRadius: 9, fontWeight: 700 }}
                       onClick={closeEdit}
                       disabled={!!busyId}
                     >
@@ -737,8 +738,8 @@ export default function Branches() {
                     </button>
 
                     <button
-                      className="btn btn-primary"
-                      style={{ borderRadius: 10, fontWeight: 800 }}
+                      className="btn btn-primary btn-sm"
+                      style={{ borderRadius: 9, fontWeight: 800 }}
                       disabled={!!busyId}
                     >
                       {busyId ? "Saving..." : "Save Changes"}
@@ -760,25 +761,27 @@ function SummaryCard({ title, value, icon, hint }) {
   return (
     <div className="col-12 col-sm-6 col-xl-4">
       <div
-        className="p-3 h-100"
+        className="h-100"
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           border: "1px solid rgba(148,163,184,.28)",
-          boxShadow: "0 8px 18px rgba(15,23,42,.05)",
+          boxShadow: "0 5px 13px rgba(15,23,42,.04)",
           background: "rgba(255,255,255,.88)",
+          padding: "10px 14px",
+          minHeight: 82,
         }}
       >
-        <div className="d-flex justify-content-between align-items-start">
-          <div>
-            <div className="text-muted" style={{ fontSize: 13, fontWeight: 700 }}>
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <div style={{ minWidth: 0 }}>
+            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
               {title}
             </div>
 
-            <div style={{ fontSize: 28, fontWeight: 900, color: "#0F172A" }}>
+            <div style={{ fontSize: 23, lineHeight: 1.05, fontWeight: 900, color: "#0F172A" }}>
               {value}
             </div>
 
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: 11.5 }}>
               {hint}
             </div>
           </div>
@@ -786,13 +789,14 @@ function SummaryCard({ title, value, icon, hint }) {
           <div
             className="d-flex align-items-center justify-content-center"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
+              width: 34,
+              height: 34,
+              borderRadius: 12,
               background: "rgba(219,234,254,.55)",
               border: "1px solid rgba(147,197,253,.55)",
               color: "#1D4ED8",
-              fontSize: 18,
+              fontSize: 15,
+              flex: "0 0 auto",
             }}
           >
             <i className={`bi ${icon}`}></i>

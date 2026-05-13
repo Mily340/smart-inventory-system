@@ -35,13 +35,18 @@ export default function NavBar() {
   const isRider = role === "DELIVERY_RIDER";
 
   const isAdminStaff = isSuperAdmin || isInventoryOfficer;
+  const canViewDashboard = isSuperAdmin || isInventoryOfficer || isBranchManager;
 
   const isPublicCatalog = location.pathname.startsWith("/catalog");
   const isLoginPage = location.pathname === "/login";
   const isInactivePage = location.pathname === "/branch-inactive";
 
   const shouldShowShell =
-    isLoggedIn && !isPublicCatalog && !isLoginPage && !isInactivePage && branchIsActive !== "false";
+    isLoggedIn &&
+    !isPublicCatalog &&
+    !isLoginPage &&
+    !isInactivePage &&
+    branchIsActive !== "false";
 
   useEffect(() => {
     if (shouldShowShell) document.body.classList.add("si-layout");
@@ -145,9 +150,11 @@ export default function NavBar() {
         </Link>
 
         <nav className="si-nav">
-          <Link className={`si-link ${isActive("/dashboard") ? "active" : ""}`} to="/dashboard">
-            Dashboard
-          </Link>
+          {canViewDashboard ? (
+            <Link className={`si-link ${isActive("/dashboard") ? "active" : ""}`} to="/dashboard">
+              Dashboard
+            </Link>
+          ) : null}
 
           {isAdminStaff ? (
             <>
