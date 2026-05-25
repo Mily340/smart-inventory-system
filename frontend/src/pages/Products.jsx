@@ -23,7 +23,6 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("pcs");
   const [price, setPrice] = useState("");
@@ -55,6 +54,10 @@ export default function Products() {
       latest: products[0]?.name || "—",
     };
   }, [products, categories]);
+
+  const nextSku = useMemo(() => {
+    return `SKU-${String(products.length + 1).padStart(3, "0")}`;
+  }, [products]);
 
   const handleUnauthorized = (msg) => {
     if (String(msg || "").toLowerCase().includes("unauthorized")) {
@@ -108,7 +111,7 @@ export default function Products() {
 
     try {
       await client.post("/products", {
-        sku: sku.trim(),
+        sku: nextSku,
         name: name.trim(),
         unit: unit.trim(),
         price: Number(price),
@@ -117,7 +120,6 @@ export default function Products() {
         categoryId,
       });
 
-      setSku("");
       setName("");
       setUnit("pcs");
       setPrice("");
@@ -189,7 +191,8 @@ export default function Products() {
   };
 
   const headerCardStyle = {
-    background: "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
+    background:
+      "linear-gradient(180deg, rgba(219,234,254,.45), rgba(255,255,255,1))",
     borderBottom: "1px solid rgba(148,163,184,.22)",
   };
 
@@ -207,6 +210,7 @@ export default function Products() {
             <h3 className="m-0" style={{ fontWeight: 900, letterSpacing: 0.2 }}>
               Products
             </h3>
+
             <div className="text-muted" style={{ marginTop: 2, fontSize: 14 }}>
               Manage product details, categories, prices, and catalog images.
             </div>
@@ -242,12 +246,14 @@ export default function Products() {
             icon="bi-box-seam"
             hint="Catalog items"
           />
+
           <SummaryCard
             title="Categories"
             value={summary.categories}
             icon="bi-tags"
             hint="Product groups"
           />
+
           <SummaryCard
             title="Latest Product"
             value={summary.latest}
@@ -263,6 +269,7 @@ export default function Products() {
                 <div style={{ fontSize: 13, fontWeight: 900, color: "#0F172A" }}>
                   Create Product
                 </div>
+
                 <div className="text-muted" style={{ fontSize: 12 }}>
                   Add product details, price, category, and optional image.
                 </div>
@@ -278,7 +285,7 @@ export default function Products() {
                   background: "rgba(255,255,255,.85)",
                 }}
               >
-                Auto product code
+                Auto product code & SKU
               </span>
             </div>
           </div>
@@ -287,18 +294,24 @@ export default function Products() {
             <form onSubmit={createProduct} className="row g-2 align-items-end">
               <div className="col-12 col-md-2">
                 <label className="form-label small text-muted mb-1">SKU</label>
+
                 <input
                   className="form-control form-control-sm"
-                  style={inputStyle}
-                  placeholder="SKU-001"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  required
+                  style={{
+                    ...inputStyle,
+                    background: "#F8FAFC",
+                    fontWeight: 700,
+                  }}
+                  value={nextSku}
+                  readOnly
                 />
               </div>
 
               <div className="col-12 col-md-2">
-                <label className="form-label small text-muted mb-1">Product Name</label>
+                <label className="form-label small text-muted mb-1">
+                  Product Name
+                </label>
+
                 <input
                   className="form-control form-control-sm"
                   style={inputStyle}
@@ -311,6 +324,7 @@ export default function Products() {
 
               <div className="col-6 col-md-2">
                 <label className="form-label small text-muted mb-1">Unit</label>
+
                 <input
                   className="form-control form-control-sm"
                   style={inputStyle}
@@ -323,6 +337,7 @@ export default function Products() {
 
               <div className="col-6 col-md-2">
                 <label className="form-label small text-muted mb-1">Price</label>
+
                 <input
                   className="form-control form-control-sm"
                   style={inputStyle}
@@ -337,7 +352,10 @@ export default function Products() {
               </div>
 
               <div className="col-12 col-md-3">
-                <label className="form-label small text-muted mb-1">Category</label>
+                <label className="form-label small text-muted mb-1">
+                  Category
+                </label>
+
                 <select
                   className="form-select form-select-sm"
                   style={inputStyle}
@@ -369,7 +387,10 @@ export default function Products() {
               </div>
 
               <div className="col-12 col-md-6">
-                <label className="form-label small text-muted mb-1">Image URL optional</label>
+                <label className="form-label small text-muted mb-1">
+                  Image URL optional
+                </label>
+
                 <input
                   className="form-control form-control-sm"
                   style={inputStyle}
@@ -380,7 +401,10 @@ export default function Products() {
               </div>
 
               <div className="col-12 col-md-6">
-                <label className="form-label small text-muted mb-1">Description optional</label>
+                <label className="form-label small text-muted mb-1">
+                  Description optional
+                </label>
+
                 <input
                   className="form-control form-control-sm"
                   style={inputStyle}
@@ -453,13 +477,21 @@ export default function Products() {
                             }}
                           />
                         </td>
+
                         <td style={{ fontWeight: 800 }}>{p.code || "-"}</td>
                         <td>{p.sku}</td>
                         <td style={{ fontWeight: 800 }}>{p.name}</td>
-                        <td>{p.category?.name || categoryById.get(p.categoryId)?.name || "-"}</td>
+
+                        <td>
+                          {p.category?.name ||
+                            categoryById.get(p.categoryId)?.name ||
+                            "-"}
+                        </td>
+
                         <td>{p.unit}</td>
                         <td>{p.price ?? "-"}</td>
                         <td className="text-muted">{p.description || "-"}</td>
+
                         <td className="text-center">
                           <button
                             className="btn btn-sm btn-outline-primary"
@@ -486,8 +518,8 @@ export default function Products() {
             )}
 
             <div className="text-muted" style={{ fontSize: 11.5, marginTop: 8 }}>
-              Product codes are generated automatically. SKU, name, unit, price, category, image,
-              and description can be updated from Edit.
+              Product codes and SKU are generated automatically. Name, unit,
+              price, category, image, and description can be updated from Edit.
             </div>
           </div>
         </div>
@@ -552,7 +584,11 @@ export default function Products() {
                   >
                     Edit Product
                   </h5>
-                  <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>
+
+                  <div
+                    className="text-muted"
+                    style={{ fontSize: 12, marginTop: 2 }}
+                  >
                     Update product details and catalog image.
                   </div>
                 </div>
@@ -575,7 +611,10 @@ export default function Products() {
               >
                 <div className="row g-2">
                   <div className="col-12 col-md-3">
-                    <label className="form-label small text-muted mb-1">SKU</label>
+                    <label className="form-label small text-muted mb-1">
+                      SKU
+                    </label>
+
                     <input
                       className="form-control form-control-sm"
                       style={inputStyle}
@@ -586,7 +625,10 @@ export default function Products() {
                   </div>
 
                   <div className="col-12 col-md-3">
-                    <label className="form-label small text-muted mb-1">Name</label>
+                    <label className="form-label small text-muted mb-1">
+                      Name
+                    </label>
+
                     <input
                       className="form-control form-control-sm"
                       style={inputStyle}
@@ -597,7 +639,10 @@ export default function Products() {
                   </div>
 
                   <div className="col-6 col-md-3">
-                    <label className="form-label small text-muted mb-1">Unit</label>
+                    <label className="form-label small text-muted mb-1">
+                      Unit
+                    </label>
+
                     <input
                       className="form-control form-control-sm"
                       style={inputStyle}
@@ -608,7 +653,10 @@ export default function Products() {
                   </div>
 
                   <div className="col-6 col-md-3">
-                    <label className="form-label small text-muted mb-1">Price</label>
+                    <label className="form-label small text-muted mb-1">
+                      Price
+                    </label>
+
                     <input
                       className="form-control form-control-sm"
                       style={inputStyle}
@@ -622,7 +670,10 @@ export default function Products() {
                   </div>
 
                   <div className="col-12 col-md-4">
-                    <label className="form-label small text-muted mb-1">Category</label>
+                    <label className="form-label small text-muted mb-1">
+                      Category
+                    </label>
+
                     <select
                       className="form-select form-select-sm"
                       style={inputStyle}
@@ -640,7 +691,10 @@ export default function Products() {
                   </div>
 
                   <div className="col-12 col-md-8">
-                    <label className="form-label small text-muted mb-1">Description</label>
+                    <label className="form-label small text-muted mb-1">
+                      Description
+                    </label>
+
                     <input
                       className="form-control form-control-sm"
                       style={inputStyle}
@@ -651,7 +705,10 @@ export default function Products() {
                   </div>
 
                   <div className="col-12">
-                    <label className="form-label small text-muted mb-1">Image URL optional</label>
+                    <label className="form-label small text-muted mb-1">
+                      Image URL optional
+                    </label>
+
                     <input
                       className="form-control form-control-sm"
                       style={inputStyle}
@@ -662,7 +719,11 @@ export default function Products() {
 
                     <div className="mt-2">
                       <img
-                        src={editImageUrl?.trim() ? editImageUrl.trim() : FALLBACK_IMG}
+                        src={
+                          editImageUrl?.trim()
+                            ? editImageUrl.trim()
+                            : FALLBACK_IMG
+                        }
                         alt="Preview"
                         loading="lazy"
                         decoding="async"
@@ -738,7 +799,10 @@ function SummaryCard({ title, value, icon, hint }) {
       >
         <div className="d-flex justify-content-between align-items-center gap-2">
           <div style={{ minWidth: 0 }}>
-            <div className="text-muted" style={{ fontSize: 12, fontWeight: 800 }}>
+            <div
+              className="text-muted"
+              style={{ fontSize: 12, fontWeight: 800 }}
+            >
               {title}
             </div>
 
