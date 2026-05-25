@@ -792,7 +792,7 @@ export default function Home() {
                     maxWidth: 760,
                   }}
                 >
-                  Modern inventory control for multi-branch business operations
+                  Modern Inventory Control for Multi-Branch Business Operations
                 </h1>
 
                 <p
@@ -865,7 +865,7 @@ export default function Home() {
                     <div>
                       <div style={{ fontWeight: 950, fontSize: 17 }}>Product Preview</div>
                       <div className="text-muted" style={{ fontSize: 12 }}>
-                        Floating catalog showcase
+                        Catalog showcase
                       </div>
                     </div>
 
@@ -1010,7 +1010,7 @@ export default function Home() {
                     }}
                   >
                     <div style={{ fontSize: 12, fontWeight: 900, color: "#1E40AF" }}>
-                      Explore quality products selected to meet your daily business needs.
+                      Explore quality products to meet your daily business needs.
                     </div>
                   </div>
                 </div>
