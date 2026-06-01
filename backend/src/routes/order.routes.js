@@ -13,7 +13,7 @@ router.use(protect);
 // view orders (staff + branch staff)
 router.get(
   "/",
-  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF"),
+  allowRoles("SUPER_ADMIN", "BRANCH_MANAGER", "INVENTORY_OFFICER", "BRANCH_STAFF", "DELIVERY_RIDER"),
   getOrders
 );
 
