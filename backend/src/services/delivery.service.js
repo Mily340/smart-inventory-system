@@ -27,7 +27,7 @@ const notify = async (tx, { userId, branchId, title, message }) => {
   });
 };
 
-export const listDeliveries = async ({ branchId, riderId, orderId }) => {
+export const listDeliveries = async ({ branchId, riderId, orderId }, user) => {
   const where = {};
 
   if (riderId) where.riderId = riderId;

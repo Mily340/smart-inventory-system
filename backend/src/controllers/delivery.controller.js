@@ -11,7 +11,7 @@ export const getDeliveries = async (req, res, next) => {
     const riderId = req.query.riderId || undefined;
     const orderId = req.query.orderId || undefined;
 
-    const data = await listDeliveries({ branchId, riderId, orderId });
+    const data = await listDeliveries({ branchId, riderId, orderId }, req.user);
     res.json({ success: true, message: "Deliveries fetched", data });
   } catch (e) {
     next(e);
