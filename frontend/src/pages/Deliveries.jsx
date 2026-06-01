@@ -221,87 +221,65 @@ export default function Deliveries() {
     }
   };
 
-const renderStatusButtons = (d) => {
-  const isOwnDelivery =
-    !isRider || d.riderId === userId || d.rider?.id === userId;
+  const renderStatusButtons = (d) => {
+    if (d.status === "DELIVERED") {
+      return (
+        <span style={finalIconStyle("DELIVERED")} title="Delivered">
+          <i className="bi bi-check-lg"></i>
+        </span>
+      );
+    }
 
-  if (!isOwnDelivery) {
+    if (d.status === "FAILED" || d.status === "CANCELLED") {
+      return (
+        <span style={finalIconStyle("FAILED")} title={d.status}>
+          <i className="bi bi-x-lg"></i>
+        </span>
+      );
+    }
+
+    if (!canManageStatus) {
+      return <span className="text-muted">—</span>;
+    }
+
+    if (d.status === "ASSIGNED") {
+      return (
+        <button
+          className="btn btn-sm btn-outline-primary"
+          style={{ borderRadius: 9, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
+          onClick={() => updateStatus(d.id, "PICKED_UP")}
+        >
+          Picked Up
+        </button>
+      );
+    }
+
+    if (d.status === "PICKED_UP") {
+      return (
+        <button
+          className="btn btn-sm btn-outline-primary"
+          style={{ borderRadius: 9, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
+          onClick={() => updateStatus(d.id, "IN_TRANSIT")}
+        >
+          In Transit
+        </button>
+      );
+    }
+
+    if (d.status === "IN_TRANSIT") {
+      return (
+        <button
+          className="btn btn-sm btn-outline-success"
+          style={{ borderRadius: 9, fontWeight: 700, padding: "4px 9px", fontSize: 12 }}
+          onClick={() => updateStatus(d.id, "DELIVERED")}
+        >
+          Delivered
+        </button>
+      );
+    }
+
     return <span className="text-muted">—</span>;
-  }
-
-  if (d.status === "DELIVERED") {
-    return (
-      <span style={finalIconStyle("DELIVERED")} title="Delivered">
-        <i className="bi bi-check-lg"></i>
-      </span>
-    );
-  }
-
-  if (d.status === "FAILED" || d.status === "CANCELLED") {
-    return (
-      <span style={finalIconStyle("FAILED")} title={d.status}>
-        <i className="bi bi-x-lg"></i>
-      </span>
-    );
-  }
-
-  if (!canManageStatus) {
-    return <span className="text-muted">—</span>;
-  }
-
-  if (d.status === "ASSIGNED") {
-    return (
-      <button
-        className="btn btn-sm btn-outline-primary"
-        style={{
-          borderRadius: 9,
-          fontWeight: 700,
-          padding: "4px 9px",
-          fontSize: 12,
-        }}
-        onClick={() => updateStatus(d.id, "PICKED_UP")}
-      >
-        Picked Up
-      </button>
-    );
-  }
-
-  if (d.status === "PICKED_UP") {
-    return (
-      <button
-        className="btn btn-sm btn-outline-primary"
-        style={{
-          borderRadius: 9,
-          fontWeight: 700,
-          padding: "4px 9px",
-          fontSize: 12,
-        }}
-        onClick={() => updateStatus(d.id, "IN_TRANSIT")}
-      >
-        In Transit
-      </button>
-    );
-  }
-
-  if (d.status === "IN_TRANSIT") {
-    return (
-      <button
-        className="btn btn-sm btn-outline-success"
-        style={{
-          borderRadius: 9,
-          fontWeight: 700,
-          padding: "4px 9px",
-          fontSize: 12,
-        }}
-        onClick={() => updateStatus(d.id, "DELIVERED")}
-      >
-        Delivered
-      </button>
-    );
-  }
-
-  return <span className="text-muted">—</span>;
-};
+  };
 
   const pageWrapStyle = {
     marginTop: 10,
